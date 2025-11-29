@@ -4,32 +4,28 @@ This documents the naming and folder conventions to mirror the ports/adapters pa
 
 ## High-level folders
 - `internal/`
-  - `services/<Domain>/<Domain>Service.go` — business logic (use-cases) and inbound port interface for that domain.
-  - `ports/inbound/<Domain>/<Domain>InboundPort.go` — interface(s) the transport calls (mirrors service methods if you separate them).
-  - `ports/outbound/<Domain>/<Domain>Repository.go` (one file per outbound interface, e.g., PatientRepository, AnamnesisRepository, PDFGenerator, BackupStore).
-  - `database/<Domain>/<Domain>Repository.go` (DB adapter implementing outbound port; helpers/tests live alongside, e.g., `UsersRepositoryHelpers.go`, `UsersRepositoryTest.go`).
-  - `transport/http/<Domain>/...` or `transport/grpc/<Domain>/...` — handlers/adapters implementing inbound ports (files like `PatientsInbound.go` or `UsersInbound.go`).
+  - `services/<Domain>/<Domain>Service.go` — business logic (use-cases) and inbound port for that domain. Tests next to it (`<Domain>Service_Test.go`).
+  - `database/<Domain>/<Domain>Repository.go` — DB adapter implementing outbound port. Helper/test files live here too.
+  - `api/rest/core/` — transport layer (core API). Inside:
+    - `inbound/<Domain>/<Domain>_inbound_port.go` — inbound interfaces the transport calls.
+    - `outbound/<Domain>/<Domain>_outbound_port.go` — outbound interfaces the core layer depends on (DB, PDF, backup, etc.).
+    - Handlers/controllers for HTTP/REST can sit alongside or under `handlers/` in this area.
 - `protos/` — proto definitions (source of truth).
 - `golang/` — generated code from protos (gitignored except for `.gitkeep`).
 
 ## Naming rules
-- Keep one interface per file where practical:
-  - Inbound: `<Domain>InboundPort.go` (methods the handler calls).
-  - Outbound: `<Domain>Repository.go`, `<Domain>PDFGenerator.go`, etc.
-  - Service: `<Domain>Service.go` (defines service struct and the service interface if kept here).
-- Handlers/transport adapters should live under `transport/<protocol>/<Domain>/` and implement the inbound port (or generated gRPC interfaces), delegating to service/controller.
-- Controllers (if used) can sit next to transport adapters: e.g., `transport/http/<Domain>/<Domain>Controller.go`.
+- One interface per file where practical:
+  - Inbound: `<Domain>_inbound_port.go` (methods the handler calls).
+  - Outbound: `<Domain>_outbound_port.go` (DB/PDF/Backup/etc.), or more specific names if clearer.
+  - Service: `<Domain>Service.go` (service struct + service interface).
+- Handlers/transport adapters go under `api/rest/core/...`, implementing the inbound port (or generated gRPC if added later) and delegating to service.
 
 ## Example (Patients)
-- `internal/services/Patients/PatientsService.go` — business logic + PatientsService interface.
-- `internal/ports/inbound/Patients/PatientsInboundPort.go` — inbound interface called by HTTP/gRPC.
-- `internal/ports/outbound/Patients/PatientsRepository.go` — outbound interface for DB.
-- `internal/ports/outbound/Patients/AnamnesisRepository.go`
-- `internal/ports/outbound/Patients/PDFGenerator.go`
-- `internal/ports/outbound/Patients/BackupStore.go`
-- `internal/database/Patients/PatientsRepository.go` — Postgres (ORM) implementation.
-- `internal/transport/http/Patients/PatientsInbound.go` — HTTP handler implementing inbound port.
-- `internal/transport/grpc/Patients/PatientsInbound.go` — gRPC server implementing inbound port/generated interface.
+- `internal/services/Patients/PatientsService.go`
+- `internal/database/Patients/PatientsRepository.go`
+- `internal/api/rest/core/inbound/Patients/Patients_inbound_port.go`
+- `internal/api/rest/core/outbound/Patients/Patients_outbound_port.go` (or more specific: `Anamnesis_outbound_port.go`, `PDF_outbound_port.go`, `Backup_outbound_port.go`)
+- HTTP handlers can live under `internal/api/rest/core/handlers/Patients/*.go` and call the inbound port.
 
 ## ORM note
 If using an ORM (e.g., GORM), keep the ORM models/adapters in `internal/database/<Domain>/` implementing the outbound repository ports. Keep domain models (proto-aligned) in the service layer; do not leak ORM models upward.
