@@ -1,10 +1,12 @@
 import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
 import type { ReactElement } from 'react'
 import { AuthProvider, useAuth } from './auth'
+import { PatientsProvider } from './data/PatientsContext'
 import { LoginPage } from './pages/Login'
 import { RegisterPage } from './pages/Register'
 import { WorkspacePage } from './pages/Workspace'
 import { SchedulePage } from './pages/Schedule'
+import { ManagePatientsPage } from './pages/ManagePatients'
 
 function Protected({ children }: { children: ReactElement }) {
   const { user } = useAuth()
@@ -29,6 +31,9 @@ function AppShell() {
           <NavLink to="/app/pacijenti" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
             Pacijenti
           </NavLink>
+          <NavLink to="/app/upravljanje" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
+            Upravljanje
+          </NavLink>
           <NavLink to="/app/raspored" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
             Raspored
           </NavLink>
@@ -48,26 +53,29 @@ function AppShell() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Redirector />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route
-            path="/app"
-            element={
-              <Protected>
-                <AppShell />
-              </Protected>
-            }
-          >
-            <Route index element={<Navigate to="/app/pacijenti" replace />} />
-            <Route path="pacijenti" element={<WorkspacePage />} />
-            <Route path="raspored" element={<SchedulePage />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <PatientsProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Redirector />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/app"
+              element={
+                <Protected>
+                  <AppShell />
+                </Protected>
+              }
+            >
+              <Route index element={<Navigate to="/app/pacijenti" replace />} />
+              <Route path="pacijenti" element={<WorkspacePage />} />
+              <Route path="upravljanje" element={<ManagePatientsPage />} />
+              <Route path="raspored" element={<SchedulePage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </PatientsProvider>
     </AuthProvider>
   )
 }
