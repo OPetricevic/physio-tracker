@@ -17,6 +17,12 @@ Working list for backend and deployment tasks. Adjust as requirements arrive (e.
 - Make targets: `cd backend && make proto-tools` (install plugins), `make proto` (generate Go + gRPC).
 - Consider adding GORM plugin later if ORM codegen is needed.
 
+## Install/run scripts vs Docker
+- Target (doctor offline machine): prefer native scripts over Docker for simplicity.
+  - PowerShell/bash script to install/start Postgres, run migrations, build frontend, start backend, set hosts entry (e.g., app.localclinic.local -> 127.0.0.1:3600), open the app, and stop any previous instance.
+  - Keep this as the primary delivery path unless we move online.
+- Optional: add Docker Compose for dev/future deployment (Postgres + backend, optional frontend static) but not required for the doctor.
+
 ## Run scripts (future)
 - Single prod entry (e.g., `make prod` or `./run.ps1`) that:
   1) Builds frontend (npm run build) and serves static assets (backend or lightweight file server).
