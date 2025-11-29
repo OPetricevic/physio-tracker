@@ -47,7 +47,7 @@ export function PatientList({
                 <p className="list-title">
                   {patient.firstName} {patient.lastName}
                 </p>
-                <p className="list-subtitle">{patient.phone || 'No phone added'}</p>
+                <p className="list-subtitle">{patient.phone || 'Telefon nije unesen'}</p>
               </div>
               <span className="pill">
                 {new Date(patient.createdAt).toLocaleDateString()}
@@ -56,7 +56,7 @@ export function PatientList({
           )
         })}
         {patients.length === 0 && (
-          <div className="empty">No patients match your search.</div>
+          <div className="empty">Nema pacijenata za ovaj upit.</div>
         )}
       </div>
     </div>
