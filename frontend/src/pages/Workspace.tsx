@@ -3,7 +3,6 @@ import { PatientList } from '../components/PatientList'
 import { PatientForm } from '../components/PatientForm'
 import { AnamnesisPanel } from '../components/AnamnesisPanel'
 import type { Anamnesis, Patient } from '../types'
-import { useAuth } from '../auth'
 import '../App.css'
 
 const initialPatients: Patient[] = [
@@ -23,7 +22,6 @@ const initialAnamneses: Record<string, Anamnesis[]> = {
 }
 
 export function WorkspacePage() {
-  const { logout, user } = useAuth()
   const [patients, setPatients] = useState<Patient[]>(initialPatients)
   const [anamneses, setAnamneses] = useState<Record<string, Anamnesis[]>>(initialAnamneses)
   const [selectedUuid, setSelectedUuid] = useState<string | null>(patients[0]?.uuid ?? null)
@@ -87,11 +85,7 @@ export function WorkspacePage() {
           <p className="lede">
             Dodajte pacijente, bilježite anamneze i generirajte PDF zapise tretmana.
           </p>
-          {user && <p className="muted-small">Prijavljeni ste kao {user.email}</p>}
         </div>
-        <button className="btn ghost" onClick={logout}>
-          Odjava
-        </button>
       </header>
 
       <main className="layout">

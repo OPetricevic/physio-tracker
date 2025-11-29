@@ -1,9 +1,10 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
 import type { ReactElement } from 'react'
 import { AuthProvider, useAuth } from './auth'
 import { LoginPage } from './pages/Login'
 import { RegisterPage } from './pages/Register'
 import { WorkspacePage } from './pages/Workspace'
+import { SchedulePage } from './pages/Schedule'
 
 function Protected({ children }: { children: ReactElement }) {
   const { user } = useAuth()
@@ -11,27 +12,59 @@ function Protected({ children }: { children: ReactElement }) {
   return children
 }
 
+function AppShell() {
+  const { logout, user } = useAuth()
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand">
+          <span className="logo-mark">PT</span>
+          <div>
+            <p className="eyebrow">Physio Tracker</p>
+            <strong>Ordinacija</strong>
+          </div>
+        </div>
+        <nav className="nav-links">
+          <NavLink to="/app/pacijenti" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
+            Pacijenti
+          </NavLink>
+          <NavLink to="/app/raspored" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
+            Raspored
+          </NavLink>
+        </nav>
+        <div className="nav-actions">
+          {user && <span className="pill muted">Prijavljeni: {user.email}</span>}
+          <button className="btn ghost small" onClick={logout}>
+            Odjava
+          </button>
+        </div>
+      </header>
+      <Outlet />
+    </div>
+  )
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Redirector />
-            }
-          />
+          <Route path="/" element={<Redirector />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route
             path="/app"
             element={
               <Protected>
-                <WorkspacePage />
+                <AppShell />
               </Protected>
             }
-          />
+          >
+            <Route index element={<Navigate to="/app/pacijenti" replace />} />
+            <Route path="pacijenti" element={<WorkspacePage />} />
+            <Route path="raspored" element={<SchedulePage />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
@@ -41,7 +74,7 @@ function App() {
 
 function Redirector() {
   const { user } = useAuth()
-  if (user) return <Navigate to="/app" replace />
+  if (user) return <Navigate to="/app/pacijenti" replace />
   return <Navigate to="/login" replace />
 }
 
