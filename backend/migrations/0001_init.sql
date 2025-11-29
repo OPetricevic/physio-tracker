@@ -1,25 +1,25 @@
 -- Doctors and authentication
 CREATE TABLE IF NOT EXISTS doctors (
-    uuid UUID PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
+    uuid VARCHAR(255) PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS doctor_credentials (
-    doctor_uuid UUID PRIMARY KEY REFERENCES doctors(uuid) ON DELETE CASCADE,
-    password_hash TEXT NOT NULL,
+    doctor_uuid VARCHAR(255) PRIMARY KEY REFERENCES doctors(uuid) ON DELETE CASCADE,
+    password_hash VARCHAR(255) NOT NULL,
     password_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Patients (owned by doctor)
 CREATE TABLE IF NOT EXISTS patients (
-    uuid UUID PRIMARY KEY,
-    doctor_uuid UUID NOT NULL REFERENCES doctors(uuid) ON DELETE CASCADE,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    phone TEXT,
+    uuid VARCHAR(255) PRIMARY KEY,
+    doctor_uuid VARCHAR(255) NOT NULL REFERENCES doctors(uuid) ON DELETE CASCADE,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -29,9 +29,9 @@ CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(LOWER(first_name), LOWE
 
 -- Anamneses (session notes)
 CREATE TABLE IF NOT EXISTS anamneses (
-    uuid UUID PRIMARY KEY,
-    patient_uuid UUID NOT NULL REFERENCES patients(uuid) ON DELETE CASCADE,
-    note TEXT NOT NULL,
+    uuid VARCHAR(255) PRIMARY KEY,
+    patient_uuid VARCHAR(255) NOT NULL REFERENCES patients(uuid) ON DELETE CASCADE,
+    note TEXT NOT NULL, -- long text allowed
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -40,8 +40,8 @@ CREATE INDEX IF NOT EXISTS idx_anamneses_patient ON anamneses(patient_uuid, crea
 -- Auth tokens (e.g., refresh tokens or session tokens)
 CREATE TABLE IF NOT EXISTS auth_tokens (
     id BIGSERIAL PRIMARY KEY,
-    doctor_uuid UUID NOT NULL REFERENCES doctors(uuid) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE,
+    doctor_uuid VARCHAR(255) NOT NULL REFERENCES doctors(uuid) ON DELETE CASCADE,
+    token VARCHAR(255) NOT NULL UNIQUE,
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
