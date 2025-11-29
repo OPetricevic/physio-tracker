@@ -93,6 +93,9 @@ Working notes to guide development of the offline-first doctor application (Reac
 - Pacijenti/Anamneze view now paginates anamneses: 5 najnovijih po stranici, sortirano po datumu (DESC). Navigacija stranica je u panelu; backend treba vratiti sortirano po datumu kad se spoji.
 - Top navigacija dodana: Pacijenti (trenutna funkcionalnost) i Raspored (placeholder za Google Calendar integraciju).
 
+## Backend TODOs
+- See `docs/BACKEND_TODO.md` for planned backend scaffolding, run scripts, deployment helper, PDF/assets plan, and backups.
+
 ## Next Steps (candidate tasks)
 1) Scaffold backend server, wiring routes and simple health check. Add sample migration for patients/anamneses.  
 2) Scaffold frontend (Vite React TS) with Patients page and forms hooked to mock API client.  
