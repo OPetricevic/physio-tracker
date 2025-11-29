@@ -27,7 +27,6 @@ Working list for backend and deployment tasks. Adjust as requirements arrive (e.
 - If requested: add appointments and services to track schedule and revenue.
   - Tables: `services` (uuid, doctor_uuid, name, default_duration, default_price), `appointments` (uuid, doctor_uuid, patient_uuid, starts_at, ends_at, service_type/name, price, status), optional `payments`.
   - Later: availability/recurrence tables for reusable slots; reports for patients per day/week, revenue per period, upcoming schedule.
-- Scope/pricing TBD with client; current app build is 1000 EUR.
 
 ## Run scripts (future)
 - Single prod entry (e.g., `make prod` or `./run.ps1`) that:
