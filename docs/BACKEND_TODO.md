@@ -12,6 +12,11 @@ Working list for backend and deployment tasks. Adjust as requirements arrive (e.
 - Use `.env.local` (not committed) for DB URL, JWT secret (later), and Git token if needed.
 - Fine-grained GitHub token (read/pull) stored locally; never in repo. Configure `git` to use credential helper or env var for automation scripts.
 
+## Protos and codegen
+- Source protos in `backend/protos/`; Go output in `backend/golang/` (gitignored).
+- Make targets: `cd backend && make proto-tools` (install plugins), `make proto` (generate Go + gRPC).
+- Consider adding GORM plugin later if ORM codegen is needed.
+
 ## Run scripts (future)
 - Single prod entry (e.g., `make prod` or `./run.ps1`) that:
   1) Builds frontend (npm run build) and serves static assets (backend or lightweight file server).
