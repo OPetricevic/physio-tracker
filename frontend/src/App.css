@@ -230,3 +230,41 @@ textarea:focus {
 .composer textarea {
   min-height: 120px;
 }
+
+.muted-small {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Auth pages */
+.auth-page {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 26px;
+  width: min(420px, 92vw);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 2px;
+}
+
+.btn.full {
+  width: 100%;
+  justify-content: center;
+}
