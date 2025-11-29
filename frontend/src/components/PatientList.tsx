@@ -19,17 +19,17 @@ export function PatientList({
     <div className="panel">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Patients</p>
-          <h2>Roster</h2>
+          <p className="eyebrow">Pacijenti</p>
+          <h2>Popis</h2>
         </div>
         <span className="badge">{patients.length}</span>
       </div>
       <div className="field">
-        <label htmlFor="search">Search</label>
+        <label htmlFor="search">Pretraga</label>
         <input
           id="search"
           type="search"
-          placeholder="Search by name or phone"
+          placeholder="Traži po imenu ili telefonu"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
         />

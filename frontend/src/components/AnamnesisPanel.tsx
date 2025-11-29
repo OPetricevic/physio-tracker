@@ -31,23 +31,23 @@ export function AnamnesisPanel({
     <div className="panel detail">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Anamneses</p>
-          <h2>{patientName || 'Select a patient'}</h2>
+          <p className="eyebrow">Anamneze</p>
+          <h2>{patientName || 'Odaberite pacijenta'}</h2>
         </div>
         <div className="actions">
           <button type="button" className="btn ghost" onClick={onBackup} disabled={disabled}>
-            Backup patient data
+            Sigurnosna kopija
           </button>
         </div>
       </div>
 
       <div className="stack">
-        {anamneses.length === 0 && <div className="empty">No anamneses yet.</div>}
+        {anamneses.length === 0 && <div className="empty">Nema unosa.</div>}
         {anamneses.map((entry) => (
           <article key={entry.uuid} className="note">
             <div className="note__header">
               <div>
-                <p className="note__eyebrow">Visit</p>
+                <p className="note__eyebrow">Posjet</p>
                 <strong>{new Date(entry.createdAt).toLocaleDateString()}</strong>
               </div>
               <button
@@ -56,7 +56,7 @@ export function AnamnesisPanel({
                 onClick={() => onGeneratePdf(entry.uuid)}
                 disabled={disabled}
               >
-                Generate PDF
+                Generiraj PDF
               </button>
             </div>
             <p className="note__body">{entry.note}</p>
@@ -65,11 +65,11 @@ export function AnamnesisPanel({
       </div>
 
       <form className="composer" onSubmit={handleSubmit}>
-        <label htmlFor="note">Add anamnesis</label>
+        <label htmlFor="note">Dodaj anamnezu</label>
         <textarea
           id="note"
           name="note"
-          placeholder="Session notes, exercises, progress..."
+          placeholder="Bilješke sa tretmana, vježbe, napredak..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
           rows={4}
@@ -77,7 +77,7 @@ export function AnamnesisPanel({
         />
         <div className="actions">
           <button type="submit" className="btn primary" disabled={disabled}>
-            Save anamnesis
+            Spremi anamnezu
           </button>
         </div>
       </form>

@@ -83,9 +83,9 @@ function App() {
       <header className="app-header">
         <div>
           <p className="eyebrow">Physio Tracker</p>
-          <h1>Patient workspace</h1>
+          <h1>Radni prostor</h1>
           <p className="lede">
-            Add patients, record anamneses, and generate PDFs for session notes.
+            Dodajte pacijente, bilježite anamneze i generirajte PDF zapise tretmana.
           </p>
         </div>
       </header>
