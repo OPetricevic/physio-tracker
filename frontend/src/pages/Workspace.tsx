@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PatientList } from '../components/PatientList'
 import { PatientForm } from '../components/PatientForm'
 import { AnamnesisPanel } from '../components/AnamnesisPanel'
@@ -26,6 +26,8 @@ export function WorkspacePage() {
   const [anamneses, setAnamneses] = useState<Record<string, Anamnesis[]>>(initialAnamneses)
   const [selectedUuid, setSelectedUuid] = useState<string | null>(patients[0]?.uuid ?? null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 5
 
   const filteredPatients = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -38,6 +40,20 @@ export function WorkspacePage() {
 
   const selectedPatient = patients.find((p) => p.uuid === selectedUuid) ?? null
   const selectedAnamneses = (selectedUuid && anamneses[selectedUuid]) || []
+  useEffect(() => {
+    setPage(1)
+  }, [selectedUuid, selectedAnamneses.length])
+
+  const sortedAnamneses = useMemo(
+    () =>
+      [...selectedAnamneses].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [selectedAnamneses],
+  )
+  const totalPages = Math.max(1, Math.ceil(sortedAnamneses.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const pagedAnamneses = sortedAnamneses.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   const handleCreatePatient = (input: { firstName: string; lastName: string; phone?: string }) => {
     const next: Patient = {
@@ -66,6 +82,7 @@ export function WorkspacePage() {
         [selectedPatient.uuid]: [entry, ...existing],
       }
     })
+    setPage(1)
   }
 
   const handleGeneratePdf = (anamnesisUuid: string) => {
@@ -104,7 +121,10 @@ export function WorkspacePage() {
             patientName={
               selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : ''
             }
-            anamneses={selectedAnamneses}
+            anamneses={pagedAnamneses}
+            page={currentPage}
+            totalPages={totalPages}
+            onPageChange={setPage}
             disabled={!selectedPatient}
             onAdd={handleAddAnamnesis}
             onGeneratePdf={handleGeneratePdf}

@@ -4,6 +4,9 @@ import type { Anamnesis } from '../types'
 type Props = {
   patientName: string
   anamneses: Anamnesis[]
+  page: number
+  totalPages: number
+  onPageChange: (page: number) => void
   disabled: boolean
   onAdd: (note: string) => void
   onGeneratePdf: (anamnesisUuid: string) => void
@@ -13,6 +16,9 @@ type Props = {
 export function AnamnesisPanel({
   patientName,
   anamneses,
+  page,
+  totalPages,
+  onPageChange,
   disabled,
   onAdd,
   onGeneratePdf,
@@ -62,6 +68,29 @@ export function AnamnesisPanel({
             <p className="note__body">{entry.note}</p>
           </article>
         ))}
+        {totalPages > 1 && (
+          <div className="pager">
+            <button
+              type="button"
+              className="btn ghost small"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+            >
+              ◀ Prethodne
+            </button>
+            <span className="muted-small">
+              Stranica {page} / {totalPages}
+            </span>
+            <button
+              type="button"
+              className="btn ghost small"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+            >
+              Sljedeće ▶
+            </button>
+          </div>
+        )}
       </div>
 
       <form className="composer" onSubmit={handleSubmit}>

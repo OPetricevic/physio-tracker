@@ -89,6 +89,10 @@ Working notes to guide development of the offline-first doctor application (Reac
 - Basic login/registration screens exist for future auth. They store a mock user in `localStorage` and gate the workspace routes. No real backend yet.
 - Flow: open app → `/login` or `/register` → upon submit you are routed to the patient workspace.
 
+## Feature notes / changes
+- Pacijenti/Anamneze view now paginates anamneses: 5 najnovijih po stranici, sortirano po datumu (DESC). Navigacija stranica je u panelu; backend treba vratiti sortirano po datumu kad se spoji.
+- Top navigacija dodana: Pacijenti (trenutna funkcionalnost) i Raspored (placeholder za Google Calendar integraciju).
+
 ## Next Steps (candidate tasks)
 1) Scaffold backend server, wiring routes and simple health check. Add sample migration for patients/anamneses.  
 2) Scaffold frontend (Vite React TS) with Patients page and forms hooked to mock API client.  

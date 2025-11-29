@@ -235,6 +235,14 @@ textarea:focus {
   min-height: 120px;
 }
 
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+}
+
 .muted-small {
   margin: 8px 0 0;
   color: var(--muted);
