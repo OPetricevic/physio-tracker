@@ -68,7 +68,7 @@ export function AnamnesisPanel({
             <p className="note__body">{entry.note}</p>
           </article>
         ))}
-        {totalPages > 1 && (
+        {anamneses.length > 0 && (
           <div className="pager">
             <button
               type="button"
