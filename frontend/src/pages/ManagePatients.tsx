@@ -15,6 +15,7 @@ export function ManagePatientsPage() {
   const { patients, anamneses, updatePatient, deletePatient } = usePatients()
   const [editing, setEditing] = useState<EditingState>({})
   const [searchTerm, setSearchTerm] = useState('')
+  const [confirming, setConfirming] = useState<{ uuid: string; name: string; count: number } | null>(null)
 
   const filteredPatients = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -53,15 +54,17 @@ export function ManagePatientsPage() {
   }
 
   const handleDelete = (uuid: string) => {
-    const hasAnamneses = (anamneses[uuid] ?? []).length > 0
-    const confirmed = window.confirm(
-      hasAnamneses
-        ? 'Jeste li sigurni? Pacijent i sve anamneze bit će trajno obrisani.'
-        : 'Jeste li sigurni da želite obrisati pacijenta?',
-    )
-    if (!confirmed) return
-    deletePatient(uuid)
-    cancelEdit(uuid)
+    const found = patients.find((p) => p.uuid === uuid)
+    const count = (anamneses[uuid] ?? []).length
+    if (!found) return
+    setConfirming({ uuid, name: `${found.firstName} ${found.lastName}`, count })
+  }
+
+  const confirmDelete = () => {
+    if (!confirming) return
+    deletePatient(confirming.uuid)
+    cancelEdit(confirming.uuid)
+    setConfirming(null)
   }
 
   return (
@@ -178,6 +181,26 @@ export function ManagePatientsPage() {
           )}
         </div>
       </main>
+      {confirming && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p className="eyebrow">Brisanje</p>
+            <h3>Trajno obrisati pacijenta?</h3>
+            <p className="lede">
+              Brisanjem pacijenta <strong>{confirming.name}</strong> brišete i sve njegove anamneze (
+              {confirming.count} zapisa). Ova radnja je nepovratna.
+            </p>
+            <div className="actions">
+              <button className="btn ghost" onClick={() => setConfirming(null)}>
+                Odustani
+              </button>
+              <button className="btn danger" onClick={confirmDelete}>
+                Obriši sve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
