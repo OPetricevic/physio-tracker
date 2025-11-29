@@ -78,6 +78,13 @@ Working notes to guide development of the offline-first doctor application (Reac
   - `cd frontend`
   - `npm install @tanstack/react-query react-hook-form`
 
+## Running locally (current)
+- From repo root, use the Makefile helpers:
+  - `make frontend-install` to install frontend deps.
+  - `make frontend-dev` (or `make run`) to start the React dev server.
+  - `make frontend-build` to build static assets.
+- Later, add backend targets (run server, migrations, tests) and wire a launcher/shortcut that starts both backend and frontend locally.
+
 ## Next Steps (candidate tasks)
 1) Scaffold backend server, wiring routes and simple health check. Add sample migration for patients/anamneses.  
 2) Scaffold frontend (Vite React TS) with Patients page and forms hooked to mock API client.  
