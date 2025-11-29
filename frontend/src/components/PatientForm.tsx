@@ -42,6 +42,8 @@ export function PatientForm({ onCreate }: Props) {
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             required
+            onInvalid={(e) => e.currentTarget.setCustomValidity('Molimo unesite ime')}
+            onInput={(e) => e.currentTarget.setCustomValidity('')}
           />
         </div>
         <div className="field">
@@ -53,6 +55,8 @@ export function PatientForm({ onCreate }: Props) {
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             required
+            onInvalid={(e) => e.currentTarget.setCustomValidity('Molimo unesite prezime')}
+            onInput={(e) => e.currentTarget.setCustomValidity('')}
           />
         </div>
         <div className="field">
