@@ -4,13 +4,13 @@ CREATE TABLE IF NOT EXISTS doctors (
     email VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    created_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS doctor_credentials (
     doctor_uuid VARCHAR(255) PRIMARY KEY REFERENCES doctors(uuid) ON DELETE CASCADE,
     password_hash VARCHAR(255) NOT NULL,
-    password_updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    password_updated_at TIMESTAMP NOT NULL
 );
 
 -- Patients (owned by doctor)
@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS patients (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     phone VARCHAR(50),
-    created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NULL DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_patients_doctor ON patients(doctor_uuid);
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS anamneses (
     uuid VARCHAR(255) PRIMARY KEY,
     patient_uuid VARCHAR(255) NOT NULL REFERENCES patients(uuid) ON DELETE CASCADE,
     note TEXT NOT NULL, -- long text allowed
-    created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    created_at TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_anamneses_patient ON anamneses(patient_uuid, created_at DESC);
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS auth_tokens (
     id BIGSERIAL PRIMARY KEY,
     doctor_uuid VARCHAR(255) NOT NULL REFERENCES doctors(uuid) ON DELETE CASCADE,
     token VARCHAR(255) NOT NULL UNIQUE,
-    expires_at TIMESTAMP(3) NOT NULL,
-    created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_auth_tokens_doctor ON auth_tokens(doctor_uuid);
