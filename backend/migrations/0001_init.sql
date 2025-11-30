@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS patients (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     phone VARCHAR(50),
+    address VARCHAR(255),
+    date_of_birth DATE,
+    sex VARCHAR(20),
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NULL DEFAULT NULL
 );

@@ -4,8 +4,18 @@ import type { Anamnesis, Patient } from '../types'
 type PatientsContextValue = {
   patients: Patient[]
   anamneses: Record<string, Anamnesis[]>
-  createPatient: (input: { firstName: string; lastName: string; phone?: string }) => Patient
-  updatePatient: (uuid: string, input: { firstName: string; lastName: string; phone?: string }) => void
+  createPatient: (input: {
+    firstName: string
+    lastName: string
+    phone?: string
+    address?: string
+    dateOfBirth?: string
+    sex?: string
+  }) => Patient
+  updatePatient: (
+    uuid: string,
+    input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string },
+  ) => void
   deletePatient: (uuid: string) => void
   addAnamnesis: (patientUuid: string, note: string) => Anamnesis | null
 }
@@ -13,8 +23,26 @@ type PatientsContextValue = {
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined)
 
 const initialPatients: Patient[] = [
-  { uuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11', firstName: 'Mia', lastName: 'Horvat', phone: '+385 91 123 4567', createdAt: new Date().toISOString() },
-  { uuid: 'b5b0c4ad-4a2c-45b0-93f0-6ae9b94e8a22', firstName: 'Luka', lastName: 'Kovač', phone: '+385 98 987 6543', createdAt: new Date().toISOString() },
+  {
+    uuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
+    firstName: 'Mia',
+    lastName: 'Horvat',
+    phone: '+385 91 123 4567',
+    address: 'Ulica 1, Zagreb',
+    dateOfBirth: '1990-05-12',
+    sex: 'Ž',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    uuid: 'b5b0c4ad-4a2c-45b0-93f0-6ae9b94e8a22',
+    firstName: 'Luka',
+    lastName: 'Kovač',
+    phone: '+385 98 987 6543',
+    address: 'Ulica 2, Zagreb',
+    dateOfBirth: '1988-11-03',
+    sex: 'M',
+    createdAt: new Date().toISOString(),
+  },
 ]
 
 const initialAnamneses: Record<string, Anamnesis[]> = {
@@ -56,21 +84,36 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>(initialPatients)
   const [anamneses, setAnamneses] = useState<Record<string, Anamnesis[]>>(initialAnamneses)
 
-  const createPatient = (input: { firstName: string; lastName: string; phone?: string }) => {
+  const createPatient = (input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string }) => {
     const next: Patient = {
       uuid: crypto.randomUUID(),
       firstName: input.firstName,
       lastName: input.lastName,
       phone: input.phone,
+      address: input.address,
+      dateOfBirth: input.dateOfBirth,
+      sex: input.sex,
       createdAt: new Date().toISOString(),
     }
     setPatients((prev) => [next, ...prev])
     return next
   }
 
-  const updatePatient = (uuid: string, input: { firstName: string; lastName: string; phone?: string }) => {
+  const updatePatient = (uuid: string, input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string }) => {
     setPatients((prev) =>
-      prev.map((p) => (p.uuid === uuid ? { ...p, firstName: input.firstName, lastName: input.lastName, phone: input.phone } : p)),
+      prev.map((p) =>
+        p.uuid === uuid
+          ? {
+              ...p,
+              firstName: input.firstName,
+              lastName: input.lastName,
+              phone: input.phone,
+              address: input.address,
+              dateOfBirth: input.dateOfBirth,
+              sex: input.sex,
+            }
+          : p,
+      ),
     )
   }
 

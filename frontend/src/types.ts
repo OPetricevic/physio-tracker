@@ -3,6 +3,9 @@ export interface Patient {
   firstName: string
   lastName: string
   phone?: string
+  address?: string
+  dateOfBirth?: string
+  sex?: string
   createdAt: string
 }
 
