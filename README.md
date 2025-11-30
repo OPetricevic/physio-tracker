@@ -96,6 +96,7 @@ Working notes to guide development of the offline-first doctor application (Reac
 ## Backend TODOs
 - See `docs/BACKEND_TODO.md` for planned backend scaffolding, run scripts, deployment helper, PDF/assets plan, and backups.
 - See `docs/ARCHITECTURE.md` for ports/adapters naming and folder conventions (inbound/outbound/service).
+- See `docs/CLIENT_NOTES.md` for the latest client-facing data/PDF requirements (fields, search, PDF behavior).
 
 ## Next Steps (candidate tasks)
 1) Scaffold backend server, wiring routes and simple health check. Add sample migration for patients/anamneses.  
