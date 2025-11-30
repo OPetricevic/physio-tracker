@@ -12,6 +12,8 @@
   - PDF se stalno ažurira (upsert): zadnji PDF sadrži sve prethodne anamneze/dijagnoze/terapije, uz zadnju posjetu/razlog.
   - Ako je više ciklusa (pauza → novi ciklus), generirati novi dokument, ali prethodni ostaju.
   - Kod nove tegobe (npr. došao zbog koljena, kasnije leđa), PDF se ažurira adekvatno, ali anamneza/dijagnoza/terapija starih posjeta se ne mijenjaju.
+  - Koncept “slučaja”/PDF-a: ako je ista tegoba (npr. vrat), nove posjete dopisuju u isti PDF (zadnja posjeta + povijest). Ako je nova tegoba (npr. noga → vrat), otvara se novi PDF za tu tegobu. Nakon duge pauze (npr. 3+ mjeseca), doktor može odlučiti otvoriti novi PDF ili nastaviti stari. Doktor ima kontrolu želi li ažurirati postojeći ili otvoriti novi dokument.
+  - Prikaz: zadnji unos + povijest prethodnih posjeta za tu tegobu; liječnik može vidjeti stare zapise i uređivati novi unos.
 - **Pretraga/kategorizacija**:
   - Potencijalna pretraga po nalazima/tegobama (npr. leđa, koljeno, kuk).
   - Kategorizacija po čemu je riječ (tip tegobe/razlog posjete).
