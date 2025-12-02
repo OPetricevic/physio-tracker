@@ -86,24 +86,11 @@ export function AnamnesisPanel({
               </button>
             </div>
             <p className="note__body">
-              <strong>Razlog: </strong>
+              <strong>Razlog posjete: </strong>
               {entry.visitReason || 'Nije unesen'}
             </p>
-            <p className="note__body">
-              <strong>Anamneza: </strong>
-              {entry.note}
-            </p>
-            <p className="note__body">
-              <strong>Dijagnoza: </strong>
-              {entry.diagnosis || 'Nije unesena'}
-            </p>
-            <p className="note__body">
-              <strong>Terapija: </strong>
-              {entry.therapy || 'Nije unesena'}
-            </p>
-            <p className="note__body">
-              <strong>Ostale informacije: </strong>
-              {entry.otherInfo || 'Nema unosa'}
+            <p className="muted-small" style={{ marginTop: 4 }}>
+              Detalji (anamneza, dijagnoza, terapija, ostalo) su spremljeni uz zapis; prikazujemo samo razloge.
             </p>
           </article>
         ))}

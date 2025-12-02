@@ -6,7 +6,7 @@
   - Dijagnoza
   - Terapija
   - Ostale informacije (npr. drugi dolazak, stanje)
-  - Razlog posjete (prikazati na PDF-u umjesto generičke evaluacije)
+  - Razlog posjete (prikazati u UI/PDF-u; ostala polja pohranjena, ali UI može prikazivati samo razloge)
   - Datum dolaska (automatika, ali omogućiti prikaz). Zadnji PDF treba sadržavati sve prethodne.
 - **PDF**:
   - PDF se stalno ažurira (upsert): zadnji PDF sadrži sve prethodne anamneze/dijagnoze/terapije, uz zadnju posjetu/razlog.
