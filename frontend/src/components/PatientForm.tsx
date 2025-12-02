@@ -4,6 +4,9 @@ type NewPatientInput = {
   firstName: string
   lastName: string
   phone?: string
+  address?: string
+  dateOfBirth?: string
+  sex?: string
 }
 
 type Props = {
@@ -14,14 +17,27 @@ export function PatientForm({ onCreate }: Props) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [sex, setSex] = useState('')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!firstName.trim() || !lastName.trim()) return
-    onCreate({ firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() || undefined })
+    onCreate({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim() || undefined,
+      address: address.trim() || undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      sex: sex || undefined,
+    })
     setFirstName('')
     setLastName('')
     setPhone('')
+    setAddress('')
+    setDateOfBirth('')
+    setSex('')
   }
 
   return (
@@ -69,6 +85,35 @@ export function PatientForm({ onCreate }: Props) {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
+        </div>
+        <div className="field">
+          <label htmlFor="address">Adresa</label>
+          <input
+            id="address"
+            name="address"
+            placeholder="Ulica i grad"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="dateOfBirth">Datum rođenja</label>
+          <input
+            id="dateOfBirth"
+            name="dateOfBirth"
+            type="date"
+            value={dateOfBirth}
+            onChange={(e) => setDateOfBirth(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="sex">Spol</label>
+          <select id="sex" name="sex" value={sex} onChange={(e) => setSex(e.target.value)}>
+            <option value="">Odaberite</option>
+            <option value="M">M</option>
+            <option value="Ž">Ž</option>
+            <option value="Drugo">Drugo</option>
+          </select>
         </div>
       </div>
       <div className="actions">
