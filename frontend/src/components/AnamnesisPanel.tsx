@@ -89,9 +89,6 @@ export function AnamnesisPanel({
               <strong>Razlog posjete: </strong>
               {entry.visitReason || 'Nije unesen'}
             </p>
-            <p className="muted-small" style={{ marginTop: 4 }}>
-              Detalji (anamneza, dijagnoza, terapija, ostalo) su spremljeni uz zapis; prikazujemo samo razloge.
-            </p>
           </article>
         ))}
         {anamneses.length > 0 && (
