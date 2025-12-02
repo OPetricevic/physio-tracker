@@ -17,7 +17,10 @@ type PatientsContextValue = {
     input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string },
   ) => void
   deletePatient: (uuid: string) => void
-  addAnamnesis: (patientUuid: string, note: string) => Anamnesis | null
+  addAnamnesis: (
+    patientUuid: string,
+    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string },
+  ) => Anamnesis | null
 }
 
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined)
@@ -51,30 +54,50 @@ const initialAnamneses: Record<string, Anamnesis[]> = {
       uuid: '2c16b71b-5c9f-4f5c-8a3a-8e3f1d2b5c01',
       patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
       note: 'Početna evaluacija. Ograničena mobilnost ramena, zadane vježbe istezanja i hlađenje ledom.',
+      diagnosis: 'Tendinitis ramena',
+      therapy: 'Istezanja + led 3x dnevno',
+      otherInfo: 'Prvi dolazak',
+      visitReason: 'Bol u ramenu',
       createdAt: new Date().toISOString(),
     },
     {
       uuid: '4a5bcf1e-1b6d-4d2c-a8f9-6f6edc2a9f11',
       patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
       note: 'Kontrola nakon 7 dana: poboljšana pokretljivost, dodane izometrijske vježbe i lagani otpor.',
+      diagnosis: 'Tendinitis ramena',
+      therapy: 'Istezanja + izometrijske vježbe',
+      otherInfo: 'Drugi dolazak',
+      visitReason: 'Bol u ramenu',
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       uuid: '7c2e1d9f-0f2b-4f0a-9c3d-3e5f2a1b7c22',
       patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
       note: 'Treći susret: manualna terapija, smanjen bol, zadržati program istezanja i dodati elastičnu traku.',
+      diagnosis: 'Tendinitis ramena',
+      therapy: 'Manualna terapija + traka',
+      otherInfo: 'Treći dolazak',
+      visitReason: 'Bol u ramenu',
       createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       uuid: '9d1a6b3c-2f4e-4c8a-9b1d-5f6e7c8a9b33',
       patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
       note: 'Četvrti susret: stabilizacijske vježbe za rame, preporuka za hladni oblog nakon vježbanja.',
+      diagnosis: 'Tendinitis ramena',
+      therapy: 'Stabilizacijske vježbe',
+      otherInfo: 'Četvrti dolazak',
+      visitReason: 'Bol u ramenu',
       createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
       uuid: '1e3f5a7c-9b2d-4a5f-8c7e-0d1b2c3a4d44',
       patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
       note: 'Peti susret: skoro potpuni opseg pokreta, prelazak na održavanje 2x tjedno, upute za kućni program.',
+      diagnosis: 'Tendinitis ramena',
+      therapy: 'Održavanje 2x tjedno',
+      otherInfo: 'Peti dolazak',
+      visitReason: 'Bol u ramenu',
       createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
     },
   ],
@@ -126,11 +149,18 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const addAnamnesis = (patientUuid: string, note: string) => {
+  const addAnamnesis = (
+    patientUuid: string,
+    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string },
+  ) => {
     const entry: Anamnesis = {
       uuid: crypto.randomUUID(),
       patientUuid,
-      note,
+      note: input.note,
+      diagnosis: input.diagnosis,
+      therapy: input.therapy,
+      otherInfo: input.otherInfo,
+      visitReason: input.visitReason,
       createdAt: new Date().toISOString(),
     }
     setAnamneses((prev) => {

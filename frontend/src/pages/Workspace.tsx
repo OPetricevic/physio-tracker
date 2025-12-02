@@ -52,9 +52,9 @@ export function WorkspacePage() {
     setRecent((prev) => [next.uuid, ...prev.filter((id) => id !== next.uuid)].slice(0, 5))
   }
 
-  const handleAddAnamnesis = (note: string) => {
+  const handleAddAnamnesis = (input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string }) => {
     if (!selectedPatient) return
-    addAnamnesis(selectedPatient.uuid, note)
+    addAnamnesis(selectedPatient.uuid, input)
     setPage(1)
   }
 

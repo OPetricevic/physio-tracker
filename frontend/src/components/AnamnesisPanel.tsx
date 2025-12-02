@@ -8,7 +8,13 @@ type Props = {
   totalPages: number
   onPageChange: (page: number) => void
   disabled: boolean
-  onAdd: (note: string) => void
+  onAdd: (input: {
+    note: string
+    diagnosis?: string
+    therapy?: string
+    otherInfo?: string
+    visitReason?: string
+  }) => void
   onGeneratePdf: (anamnesisUuid: string) => void
   onBackup: () => void
 }
@@ -25,12 +31,26 @@ export function AnamnesisPanel({
   onBackup,
 }: Props) {
   const [note, setNote] = useState('')
+  const [diagnosis, setDiagnosis] = useState('')
+  const [therapy, setTherapy] = useState('')
+  const [otherInfo, setOtherInfo] = useState('')
+  const [visitReason, setVisitReason] = useState('')
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!note.trim() || disabled) return
-    onAdd(note.trim())
+    onAdd({
+      note: note.trim(),
+      diagnosis: diagnosis.trim() || undefined,
+      therapy: therapy.trim() || undefined,
+      otherInfo: otherInfo.trim() || undefined,
+      visitReason: visitReason.trim() || undefined,
+    })
     setNote('')
+    setDiagnosis('')
+    setTherapy('')
+    setOtherInfo('')
+    setVisitReason('')
   }
 
   return (
@@ -65,7 +85,26 @@ export function AnamnesisPanel({
                 Generiraj PDF
               </button>
             </div>
-            <p className="note__body">{entry.note}</p>
+            <p className="note__body">
+              <strong>Razlog: </strong>
+              {entry.visitReason || 'Nije unesen'}
+            </p>
+            <p className="note__body">
+              <strong>Anamneza: </strong>
+              {entry.note}
+            </p>
+            <p className="note__body">
+              <strong>Dijagnoza: </strong>
+              {entry.diagnosis || 'Nije unesena'}
+            </p>
+            <p className="note__body">
+              <strong>Terapija: </strong>
+              {entry.therapy || 'Nije unesena'}
+            </p>
+            <p className="note__body">
+              <strong>Ostale informacije: </strong>
+              {entry.otherInfo || 'Nema unosa'}
+            </p>
           </article>
         ))}
         {anamneses.length > 0 && (
@@ -94,14 +133,57 @@ export function AnamnesisPanel({
       </div>
 
       <form className="composer" onSubmit={handleSubmit}>
-        <label htmlFor="note">Dodaj anamnezu</label>
+        <label htmlFor="visitReason">Razlog posjete</label>
+        <input
+          id="visitReason"
+          name="visitReason"
+          placeholder="Bol u vratu / koljenu..."
+          value={visitReason}
+          onChange={(e) => setVisitReason(e.target.value)}
+          disabled={disabled}
+        />
+
+        <label htmlFor="note">Anamneza</label>
         <textarea
           id="note"
           name="note"
           placeholder="Bilješke sa tretmana, vježbe, napredak..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          rows={4}
+          rows={3}
+          disabled={disabled}
+        />
+
+        <label htmlFor="diagnosis">Dijagnoza</label>
+        <textarea
+          id="diagnosis"
+          name="diagnosis"
+          placeholder="Dijagnoza..."
+          value={diagnosis}
+          onChange={(e) => setDiagnosis(e.target.value)}
+          rows={2}
+          disabled={disabled}
+        />
+
+        <label htmlFor="therapy">Terapija</label>
+        <textarea
+          id="therapy"
+          name="therapy"
+          placeholder="Terapija..."
+          value={therapy}
+          onChange={(e) => setTherapy(e.target.value)}
+          rows={2}
+          disabled={disabled}
+        />
+
+        <label htmlFor="otherInfo">Ostale informacije</label>
+        <textarea
+          id="otherInfo"
+          name="otherInfo"
+          placeholder="Drugi dolazak, stanje..."
+          value={otherInfo}
+          onChange={(e) => setOtherInfo(e.target.value)}
+          rows={2}
           disabled={disabled}
         />
         <div className="actions">
