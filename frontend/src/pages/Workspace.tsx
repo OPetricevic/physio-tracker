@@ -3,6 +3,7 @@ import { PatientList } from '../components/PatientList'
 import { PatientForm } from '../components/PatientForm'
 import { AnamnesisPanel } from '../components/AnamnesisPanel'
 import { usePatients } from '../data/PatientsContext'
+import type { Patient } from '../types'
 import '../App.css'
 
 export function WorkspacePage() {
@@ -11,6 +12,7 @@ export function WorkspacePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
+  const [recent, setRecent] = useState<string[]>([])
   const pageSize = 5
 
   const filteredPatients = useMemo(() => {
@@ -21,6 +23,11 @@ export function WorkspacePage() {
       return name.includes(term) || (p.phone ?? '').toLowerCase().includes(term)
     })
   }, [patients, searchTerm])
+
+  const recentPatients = useMemo(
+    () => recent.map((id) => patients.find((p) => p.uuid === id)).filter(Boolean) as Patient[],
+    [recent, patients],
+  )
 
   const selectedPatient = patients.find((p) => p.uuid === selectedUuid) ?? null
   const selectedAnamneses = (selectedUuid && anamneses[selectedUuid]) || []
@@ -42,12 +49,18 @@ export function WorkspacePage() {
   const handleCreatePatient = (input: { firstName: string; lastName: string; phone?: string }) => {
     const next = createPatient(input)
     setSelectedUuid(next.uuid)
+    setRecent((prev) => [next.uuid, ...prev.filter((id) => id !== next.uuid)].slice(0, 5))
   }
 
   const handleAddAnamnesis = (note: string) => {
     if (!selectedPatient) return
     addAnamnesis(selectedPatient.uuid, note)
     setPage(1)
+  }
+
+  const handleSelectPatient = (uuid: string) => {
+    setSelectedUuid(uuid)
+    setRecent((prev) => [uuid, ...prev.filter((id) => id !== uuid)].slice(0, 5))
   }
 
   const handleGeneratePdf = (anamnesisUuid: string) => {
@@ -80,8 +93,9 @@ export function WorkspacePage() {
           {showForm && <PatientForm onCreate={handleCreatePatient} />}
           <PatientList
             patients={filteredPatients}
+            recentPatients={recentPatients}
             selectedUuid={selectedUuid}
-            onSelect={setSelectedUuid}
+            onSelect={handleSelectPatient}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
           />
