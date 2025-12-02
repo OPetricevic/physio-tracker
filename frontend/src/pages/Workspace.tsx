@@ -101,19 +101,24 @@ export function WorkspacePage() {
           />
         </div>
         <div className="column wide">
-          <AnamnesisPanel
-            patientName={
-              selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : ''
-            }
-            anamneses={pagedAnamneses}
-            page={currentPage}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            disabled={!selectedPatient}
-            onAdd={handleAddAnamnesis}
-            onGeneratePdf={handleGeneratePdf}
-            onBackup={handleBackup}
-          />
+          {selectedPatient ? (
+            <AnamnesisPanel
+              patientName={`${selectedPatient.firstName} ${selectedPatient.lastName}`}
+              anamneses={pagedAnamneses}
+              page={currentPage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              disabled={!selectedPatient}
+              onAdd={handleAddAnamnesis}
+              onGeneratePdf={handleGeneratePdf}
+              onBackup={handleBackup}
+            />
+          ) : (
+            <div className="panel empty">
+              <h2>Odaberite pacijenta</h2>
+              <p className="muted-small">Pronađite pacijenta pretragom ili dodajte novog.</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
