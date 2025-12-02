@@ -10,6 +10,7 @@ export function WorkspacePage() {
   const [selectedUuid, setSelectedUuid] = useState<string | null>(patients[0]?.uuid ?? null)
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
+  const [showForm, setShowForm] = useState(false)
   const pageSize = 5
 
   const filteredPatients = useMemo(() => {
@@ -71,7 +72,12 @@ export function WorkspacePage() {
 
       <main className="layout">
         <div className="column">
-          <PatientForm onCreate={handleCreatePatient} />
+          <div className="toggle-row">
+            <button className="btn ghost small" onClick={() => setShowForm((v) => !v)}>
+              {showForm ? 'Sakrij obrazac' : 'Novi pacijent'}
+            </button>
+          </div>
+          {showForm && <PatientForm onCreate={handleCreatePatient} />}
           <PatientList
             patients={filteredPatients}
             selectedUuid={selectedUuid}

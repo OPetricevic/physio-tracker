@@ -417,6 +417,12 @@ textarea:focus {
   gap: 10px;
 }
 
+.toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 780px) {
   .table-head {
     display: none;
