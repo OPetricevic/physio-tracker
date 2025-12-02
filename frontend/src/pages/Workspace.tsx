@@ -8,11 +8,13 @@ import '../App.css'
 
 export function WorkspacePage() {
   const { patients, anamneses, createPatient, addAnamnesis } = usePatients()
-  const [selectedUuid, setSelectedUuid] = useState<string | null>(patients[0]?.uuid ?? null)
+  const [selectedUuid, setSelectedUuid] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
+  const [reasonFilter, setReasonFilter] = useState('')
+  const [selectedVisits, setSelectedVisits] = useState<Set<string>>(new Set())
   const pageSize = 5
 
   const filteredPatients = useMemo(() => {
@@ -35,13 +37,23 @@ export function WorkspacePage() {
     setPage(1)
   }, [selectedUuid, selectedAnamneses.length])
 
-  const sortedAnamneses = useMemo(
-    () =>
-      [...selectedAnamneses].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      ),
-    [selectedAnamneses],
-  )
+  const sortedAnamneses = useMemo(() => {
+    let list = [...selectedAnamneses].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    if (reasonFilter) {
+      list = list.filter((a) => (a.visitReason || '').toLowerCase() === reasonFilter.toLowerCase())
+    }
+    return list
+  }, [selectedAnamneses, reasonFilter])
+
+  const reasonOptions = useMemo(() => {
+    const set = new Set<string>()
+    selectedAnamneses.forEach((a) => {
+      if (a.visitReason) set.add(a.visitReason)
+    })
+    return Array.from(set)
+  }, [selectedAnamneses])
   const totalPages = Math.max(1, Math.ceil(sortedAnamneses.length / pageSize))
   const currentPage = Math.min(page, totalPages)
   const pagedAnamneses = sortedAnamneses.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -61,6 +73,7 @@ export function WorkspacePage() {
   const handleSelectPatient = (uuid: string) => {
     setSelectedUuid(uuid)
     setRecent((prev) => [uuid, ...prev.filter((id) => id !== uuid)].slice(0, 5))
+    setSelectedVisits(new Set())
   }
 
   const handleGeneratePdf = (anamnesisUuid: string) => {
@@ -69,6 +82,20 @@ export function WorkspacePage() {
 
   const handleBackup = () => {
     alert(`Pokrenula bi se sigurnosna kopija za pacijenta ${selectedPatient?.uuid ?? ''}`)
+  }
+
+  const handleToggleVisit = (visitUuid: string) => {
+    setSelectedVisits((prev) => {
+      const next = new Set(prev)
+      if (next.has(visitUuid)) next.delete(visitUuid)
+      else next.add(visitUuid)
+      return next
+    })
+  }
+
+  const handleBulkPdf = () => {
+    if (!selectedPatient || selectedVisits.size === 0) return
+    alert(`Generirao bi se PDF za posjete: ${Array.from(selectedVisits).join(', ')}`)
   }
 
   return (
@@ -112,6 +139,12 @@ export function WorkspacePage() {
               onAdd={handleAddAnamnesis}
               onGeneratePdf={handleGeneratePdf}
               onBackup={handleBackup}
+              reasonFilter={reasonFilter}
+              reasonOptions={reasonOptions}
+              onReasonFilterChange={setReasonFilter}
+              selectedVisits={selectedVisits}
+              onToggleVisit={handleToggleVisit}
+              onBulkPdf={handleBulkPdf}
             />
           ) : (
             <div className="panel empty">
