@@ -208,6 +208,13 @@ textarea:focus {
   border-radius: 12px;
   padding: 14px;
   background: var(--surface-2);
+  cursor: pointer;
+}
+
+.note.is-selected {
+  border-color: var(--accent);
+  background: rgba(90, 131, 247, 0.06);
+  box-shadow: 0 10px 30px rgba(90, 131, 247, 0.12);
 }
 
 .note__header {

@@ -98,24 +98,28 @@ export function AnamnesisPanel({
 
       <div className="stack">
         {anamneses.length === 0 && <div className="empty">Nema unosa.</div>}
-        {anamneses.map((entry) => (
-          <article key={entry.uuid} className="note">
-            <div className="note__header">
-              <div>
-                <p className="note__eyebrow">Posjet</p>
-                <strong>{new Date(entry.createdAt).toLocaleDateString()}</strong>
-              </div>
-              <div className="pill">
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedVisits.has(entry.uuid)}
-                    onChange={() => onToggleVisit(entry.uuid)}
-                    disabled={disabled}
-                  />
-                  Za PDF
-                </label>
-              </div>
+        {anamneses.map((entry) => {
+          const isSelected = selectedVisits.has(entry.uuid)
+          return (
+            <article
+              key={entry.uuid}
+              className={`note ${isSelected ? 'is-selected' : ''}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => !disabled && onToggleVisit(entry.uuid)}
+              onKeyDown={(e) => {
+                if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault()
+                  onToggleVisit(entry.uuid)
+                }
+              }}
+            >
+              <div className="note__header">
+                <div>
+                  <p className="note__eyebrow">Posjet</p>
+                  <strong>{new Date(entry.createdAt).toLocaleDateString()}</strong>
+                </div>
+              {isSelected && <span className="pill">Za PDF</span>}
               <button
                 type="button"
                 className="btn text"
@@ -130,7 +134,8 @@ export function AnamnesisPanel({
               {entry.visitReason || 'Nije unesen'}
             </p>
           </article>
-        ))}
+          )
+        })}
         {anamneses.length > 0 && (
           <div className="pager">
             <button
