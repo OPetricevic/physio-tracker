@@ -7,7 +7,7 @@
   - Terapija
   - Ostale informacije (npr. drugi dolazak, stanje)
   - Razlog posjete (prikazati na PDF-u umjesto generičke evaluacije)
-  - Datumi dolazaka (npr. 20.10 prva, 30.10 druga). Zadnji PDF treba sadržavati sve prethodne.
+  - Datum dolaska (automatika, ali omogućiti prikaz). Zadnji PDF treba sadržavati sve prethodne.
 - **PDF**:
   - PDF se stalno ažurira (upsert): zadnji PDF sadrži sve prethodne anamneze/dijagnoze/terapije, uz zadnju posjetu/razlog.
   - Ako je više ciklusa (pauza → novi ciklus), generirati novi dokument, ali prethodni ostaju.
