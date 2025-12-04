@@ -1,14 +1,19 @@
+-- Extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Doctors and authentication
 CREATE TABLE IF NOT EXISTS doctors (
     uuid VARCHAR(255) PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS doctor_credentials (
-    doctor_uuid VARCHAR(255) PRIMARY KEY REFERENCES doctors(uuid) ON DELETE CASCADE,
+    uuid VARCHAR(255) PRIMARY KEY,
+    doctor_uuid VARCHAR(255) NOT NULL UNIQUE REFERENCES doctors(uuid) ON DELETE CASCADE,
     password_hash VARCHAR(255) NOT NULL,
     password_updated_at TIMESTAMP NOT NULL
 );
@@ -50,3 +55,14 @@ CREATE TABLE IF NOT EXISTS auth_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_auth_tokens_doctor ON auth_tokens(doctor_uuid);
+
+-- Seed default admin (local/offline)
+WITH ins AS (
+  INSERT INTO doctors (uuid, email, username, first_name, last_name, created_at)
+  VALUES (gen_random_uuid()::text, 'sartorius.therapy@gmail.com', 'sartorius.therapy', 'Sebastijan', 'Petricevic', NOW())
+  ON CONFLICT (email) DO NOTHING
+  RETURNING uuid
+)
+INSERT INTO doctor_credentials (doctor_uuid, password_hash, password_updated_at)
+SELECT gen_random_uuid()::text, uuid, 'admin', NOW() FROM ins
+ON CONFLICT (doctor_uuid) DO NOTHING;
