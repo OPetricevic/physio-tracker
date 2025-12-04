@@ -2,16 +2,23 @@ syntax = "proto3";
 
 package patients.v1;
 
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
 
 // Patient represents a person under care.
 message Patient {
-  string uuid = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string phone = 4;
-  int64 created_at = 5;
-  int64 updated_at = 6;
+  string uuid = 1; // required
+  string doctor_uuid = 2; // required
+  string first_name = 3; // required
+  string last_name = 4; // required
+  google.protobuf.StringValue phone = 5;
+  google.protobuf.StringValue address = 6;
+  google.protobuf.StringValue date_of_birth = 7;
+  google.protobuf.StringValue sex = 8;
+  google.protobuf.Timestamp created_at = 9; // set by service
+  google.protobuf.Timestamp updated_at = 10; // nullable
 }
 
 // Anamnesis represents a single visit/session note.
@@ -19,13 +26,21 @@ message Anamnesis {
   string uuid = 1;
   string patient_uuid = 2;
   string note = 3;
-  int64 created_at = 4;
+  google.protobuf.StringValue diagnosis = 4;
+  google.protobuf.StringValue therapy = 5;
+  google.protobuf.StringValue other_info = 6;
+  google.protobuf.StringValue visit_reason = 7;
+  google.protobuf.Timestamp created_at = 8;
 }
 
 message CreatePatientRequest {
-  string first_name = 1;
-  string last_name = 2;
-  string phone = 3;
+  string doctor_uuid = 1;
+  string first_name = 2;
+  string last_name = 3;
+  google.protobuf.StringValue phone = 4;
+  google.protobuf.StringValue address = 5;
+  google.protobuf.StringValue date_of_birth = 6;
+  google.protobuf.StringValue sex = 7;
 }
 
 message PatientResponse {
@@ -42,9 +57,13 @@ message ListPatientsResponse {
 
 message UpdatePatientRequest {
   string uuid = 1;
-  string first_name = 2;
-  string last_name = 3;
-  string phone = 4;
+  string doctor_uuid = 2;
+  string first_name = 3;
+  string last_name = 4;
+  google.protobuf.StringValue phone = 5;
+  google.protobuf.StringValue address = 6;
+  google.protobuf.StringValue date_of_birth = 7;
+  google.protobuf.StringValue sex = 8;
 }
 
 message DeletePatientRequest {
@@ -54,6 +73,10 @@ message DeletePatientRequest {
 message AddAnamnesisRequest {
   string patient_uuid = 1;
   string note = 2;
+  google.protobuf.StringValue diagnosis = 3;
+  google.protobuf.StringValue therapy = 4;
+  google.protobuf.StringValue other_info = 5;
+  google.protobuf.StringValue visit_reason = 6;
 }
 
 message AnamnesisResponse {
@@ -73,6 +96,7 @@ message ListAnamnesesResponse {
 message GeneratePdfRequest {
   string patient_uuid = 1;
   string anamnesis_uuid = 2;
+  repeated string include_visit_uuids = 3; // visits to include (newest first in response)
 }
 
 message PdfResponse {
