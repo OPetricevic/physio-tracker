@@ -5,14 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	hdoctors "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/doctors"
-	hpatients "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/patients"
-	cdoctors "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/doctors"
-	cpatients "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/patients"
-	dbdoctors "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
-	dbpatients "github.com/OPetricevic/physio-tracker/backend/internal/database/patients"
-	svcdoctors "github.com/OPetricevic/physio-tracker/backend/internal/services/doctors"
-	svcpatients "github.com/OPetricevic/physio-tracker/backend/internal/services/patients"
+	corehandlers "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers"
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -33,19 +26,8 @@ func main() {
 		log.Fatalf("failed to connect db: %v", err)
 	}
 
-	// Wire patients handler (Postgres via GORM).
-	patientRepo := dbpatients.NewPatientsRepository(db)
-	patientSvc := svcpatients.NewService(patientRepo)
-	patientController := cpatients.NewController(patientSvc)
-	patientHandler := hpatients.NewHandler(patientController)
-	patientHandler.RegisterRoutes(r)
-
-	// Wire doctors handler
-	doctorRepo := dbdoctors.NewDoctorsRepository(db)
-	doctorSvc := svcdoctors.NewService(doctorRepo)
-	doctorController := cdoctors.NewController(doctorSvc)
-	doctorHandler := hdoctors.NewHandler(doctorController)
-	doctorHandler.RegisterRoutes(r)
+	// Wire all HTTP handlers.
+	corehandlers.RegisterAll(r, db)
 
 	server := &http.Server{
 		Addr:    ":" + addr,
