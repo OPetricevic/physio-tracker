@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	mwauth "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/middleware"
 	svc "github.com/OPetricevic/physio-tracker/backend/internal/services/patients"
 	"github.com/gorilla/mux"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -34,11 +35,17 @@ func parsePositiveInt(val string, def int) int {
 // HTTP helpers: controller handles decoding/validation and calls service.
 // Handlers only wire routes to these methods.
 func (c *PatientController) CreatePatient(w http.ResponseWriter, r *http.Request) {
+	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 	var req pb.CreatePatientRequest
 	if err := jsonpb.Unmarshal(r.Body, &req); err != nil {
 		writeJSONError(w, "invalid_request", "create patient: invalid JSON", http.StatusBadRequest)
 		return
 	}
+	req.DoctorUuid = doctorUUID
 	p, err := c.svc.Create(r.Context(), &req)
 	if err != nil {
 		switch {
@@ -57,6 +64,11 @@ func (c *PatientController) CreatePatient(w http.ResponseWriter, r *http.Request
 }
 
 func (c *PatientController) UpdatePatient(w http.ResponseWriter, r *http.Request) {
+	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 	vars := mux.Vars(r)
 	patientUUID := vars["uuid"]
 	var req pb.UpdatePatientRequest
@@ -67,6 +79,7 @@ func (c *PatientController) UpdatePatient(w http.ResponseWriter, r *http.Request
 	if patientUUID != "" {
 		req.Uuid = patientUUID
 	}
+	req.DoctorUuid = doctorUUID
 	p, err := c.svc.Update(r.Context(), &req)
 	if err != nil {
 		switch {
@@ -104,13 +117,18 @@ func (c *PatientController) DeletePatient(w http.ResponseWriter, r *http.Request
 }
 
 func (c *PatientController) ListPatients(w http.ResponseWriter, r *http.Request) {
+	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 	q := r.URL.Query()
 	pageSize := parsePositiveInt(q.Get("page_size"), 20)
 	currentPage := parsePositiveInt(q.Get("current_page"), 1)
 	req := &pb.ListPatientsRequest{
 		Query: q.Get("query"),
 	}
-	list, err := c.svc.List(r.Context(), req, pageSize, currentPage)
+	list, err := c.svc.List(r.Context(), req, doctorUUID, pageSize, currentPage)
 	if err != nil {
 		switch {
 		case errors.Is(err, svc.ErrInvalidRequest):

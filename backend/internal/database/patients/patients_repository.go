@@ -38,9 +38,12 @@ func (r *PatientsRepository) Update(ctx context.Context, p *patientspb.Patient) 
 	return p, nil
 }
 
-func (r *PatientsRepository) List(ctx context.Context, filter *patientspb.ListPatientsRequest, limit, offset int) ([]*patientspb.Patient, error) {
+func (r *PatientsRepository) List(ctx context.Context, filter *patientspb.ListPatientsRequest, doctorUUID string, limit, offset int) ([]*patientspb.Patient, error) {
 	var models []patientModel
 	q := r.db.WithContext(ctx).Table("patients")
+	if strings.TrimSpace(doctorUUID) != "" {
+		q = q.Where("doctor_uuid = ?", doctorUUID)
+	}
 	if strings.TrimSpace(filter.GetQuery()) != "" {
 		like := "%" + strings.ToLower(strings.TrimSpace(filter.GetQuery())) + "%"
 		q = q.Where("LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(phone) LIKE ?", like, like, like)

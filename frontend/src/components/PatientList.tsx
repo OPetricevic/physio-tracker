@@ -81,7 +81,7 @@ export function PatientList({
                   <p className="list-subtitle">{patient.phone || 'Telefon nije unesen'}</p>
                 </div>
                 <span className="pill">
-                  {new Date(patient.createdAt).toLocaleDateString()}
+                  {new Date(patient.createdAt).toLocaleDateString('hr-HR')}
                 </span>
               </button>
             )

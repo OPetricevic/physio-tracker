@@ -25,7 +25,7 @@ var (
 type Service interface {
 	Create(ctx context.Context, req *patientspb.CreatePatientRequest) (*patientspb.Patient, error)
 	Update(ctx context.Context, req *patientspb.UpdatePatientRequest) (*patientspb.Patient, error)
-	List(ctx context.Context, req *patientspb.ListPatientsRequest, pageSize, currentPage int) ([]*patientspb.Patient, error)
+	List(ctx context.Context, req *patientspb.ListPatientsRequest, doctorUUID string, pageSize, currentPage int) ([]*patientspb.Patient, error)
 	Delete(ctx context.Context, uuid string) error
 }
 
@@ -105,7 +105,7 @@ func (s *service) Update(ctx context.Context, req *patientspb.UpdatePatientReque
 	return updated, nil
 }
 
-func (s *service) List(ctx context.Context, req *patientspb.ListPatientsRequest, pageSize, currentPage int) ([]*patientspb.Patient, error) {
+func (s *service) List(ctx context.Context, req *patientspb.ListPatientsRequest, doctorUUID string, pageSize, currentPage int) ([]*patientspb.Patient, error) {
 	if pageSize <= 0 {
 		pageSize = 20
 	}
@@ -113,7 +113,7 @@ func (s *service) List(ctx context.Context, req *patientspb.ListPatientsRequest,
 		currentPage = 1
 	}
 	offset := (currentPage - 1) * pageSize
-	list, err := s.repo.List(ctx, req, pageSize, offset)
+	list, err := s.repo.List(ctx, req, doctorUUID, pageSize, offset)
 	if err != nil {
 		return nil, fmt.Errorf("list patients: %w", err)
 	}

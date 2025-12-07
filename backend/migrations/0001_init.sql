@@ -48,6 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_anamneses_patient ON anamneses(patient_uuid, crea
 -- Auth tokens (e.g., refresh tokens or session tokens)
 CREATE TABLE IF NOT EXISTS auth_tokens (
     id BIGSERIAL PRIMARY KEY,
+    uuid VARCHAR(255) NOT NULL UNIQUE DEFAULT gen_random_uuid()::text,
     doctor_uuid VARCHAR(255) NOT NULL REFERENCES doctors(uuid) ON DELETE CASCADE,
     token VARCHAR(255) NOT NULL UNIQUE,
     expires_at TIMESTAMP NOT NULL,
@@ -55,14 +56,3 @@ CREATE TABLE IF NOT EXISTS auth_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_auth_tokens_doctor ON auth_tokens(doctor_uuid);
-
--- Seed default admin (local/offline)
-WITH ins AS (
-  INSERT INTO doctors (uuid, email, username, first_name, last_name, created_at)
-  VALUES (gen_random_uuid()::text, 'sartorius.therapy@gmail.com', 'sartorius.therapy', 'Sebastijan', 'Petricevic', NOW())
-  ON CONFLICT (email) DO NOTHING
-  RETURNING uuid
-)
-INSERT INTO doctor_credentials (doctor_uuid, password_hash, password_updated_at)
-SELECT gen_random_uuid()::text, uuid, 'admin', NOW() FROM ins
-ON CONFLICT (doctor_uuid) DO NOTHING;

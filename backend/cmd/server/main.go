@@ -6,7 +6,6 @@ import (
 	"os"
 
 	corehandlers "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers"
-	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -14,20 +13,14 @@ import (
 func main() {
 	addr := envOrDefault("PORT", "3600")
 
-	r := mux.NewRouter()
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	}).Methods(http.MethodGet)
-
 	dsn := envOrDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/physio?sslmode=disable")
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("failed to connect db: %v", err)
 	}
 
-	// Wire all HTTP handlers.
-	corehandlers.RegisterAll(r, db)
+	// Build router (health, auth, protected modules).
+	r := corehandlers.BuildRouter(db)
 
 	server := &http.Server{
 		Addr:    ":" + addr,
