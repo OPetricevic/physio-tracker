@@ -112,7 +112,6 @@ export function PatientForm({ onCreate }: Props) {
             <option value="">Odaberite</option>
             <option value="M">M</option>
             <option value="Ž">Ž</option>
-            <option value="Drugo">Drugo</option>
           </select>
         </div>
       </div>

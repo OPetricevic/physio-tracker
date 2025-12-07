@@ -62,9 +62,3 @@ message DeletePatientRequest {
   string uuid = 1;
 }
 
-service PatientsService {
-  rpc CreatePatient(CreatePatientRequest) returns (PatientResponse);
-  rpc UpdatePatient(UpdatePatientRequest) returns (PatientResponse);
-  rpc DeletePatient(DeletePatientRequest) returns (PatientResponse);
-  rpc ListPatients(ListPatientsRequest) returns (ListPatientsResponse);
-}

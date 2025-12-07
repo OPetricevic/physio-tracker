@@ -69,10 +69,3 @@ message GenerateAnamnesisPdfRequest {
 message PdfResponse {
   bytes data = 1;
 }
-
-service AnamnesisService {
-  rpc CreateAnamnesis(CreateAnamnesisRequest) returns (AnamnesisResponse);
-  rpc UpdateAnamnesis(UpdateAnamnesisRequest) returns (AnamnesisResponse);
-  rpc ListAnamneses(ListAnamnesesRequest) returns (ListAnamnesesResponse);
-  rpc GenerateAnamnesisPdf(GenerateAnamnesisPdfRequest) returns (PdfResponse);
-}
