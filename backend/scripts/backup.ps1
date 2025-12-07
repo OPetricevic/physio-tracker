@@ -18,7 +18,7 @@ if (-not (Test-Path $BackupDir)) {
     New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 }
 
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$timestamp = Get-Date -Format "ddMMyyyy_HHmmss"
 $backupFile = Join-Path $BackupDir ("physio_" + $timestamp + ".dump")
 
 Write-Host "Creating backup: $backupFile"
