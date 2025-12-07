@@ -61,4 +61,3 @@ message UpdatePatientRequest {
 message DeletePatientRequest {
   string uuid = 1;
 }
-

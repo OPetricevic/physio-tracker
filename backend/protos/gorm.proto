@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package gorm;
 
-option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
+option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/gorm;gorm";
 
 import "google/protobuf/descriptor.proto";
 
