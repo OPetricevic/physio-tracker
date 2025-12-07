@@ -1,0 +1,10 @@
+# General ignores
+node_modules
+dist
+
+# Generated / vendor
+backend/vendor
+backend/golang
+
+# Docs (local notes, not tracked)
+docs/*.md
