@@ -13,19 +13,34 @@ import (
 	"gorm.io/gorm"
 )
 
+// module registers routes for a feature area.
+type module interface {
+	Register(r *mux.Router)
+}
+
+func newPatientModule(db *gorm.DB) module {
+	repo := dbpatients.NewPatientsRepository(db)
+	svc := svcpatients.NewService(repo)
+	ctrl := cpatients.NewController(svc)
+	h := patients.NewHandler(ctrl)
+	return h
+}
+
+func newDoctorModule(db *gorm.DB) module {
+	repo := dbdoctors.NewDoctorsRepository(db)
+	svc := svcdoctors.NewService(repo)
+	ctrl := cdoctors.NewController(svc)
+	h := doctors.NewHandler(ctrl)
+	return h
+}
+
 // RegisterAll wires all HTTP handlers to the router.
 func RegisterAll(r *mux.Router, db *gorm.DB) {
-	// Patients
-	patientRepo := dbpatients.NewPatientsRepository(db)
-	patientSvc := svcpatients.NewService(patientRepo)
-	patientController := cpatients.NewController(patientSvc)
-	patientHandler := patients.NewHandler(patientController)
-	patientHandler.RegisterRoutes(r)
-
-	// Doctors
-	doctorRepo := dbdoctors.NewDoctorsRepository(db)
-	doctorSvc := svcdoctors.NewService(doctorRepo)
-	doctorController := cdoctors.NewController(doctorSvc)
-	doctorHandler := doctors.NewHandler(doctorController)
-	doctorHandler.RegisterRoutes(r)
+	modules := []module{
+		newPatientModule(db),
+		newDoctorModule(db),
+	}
+	for _, m := range modules {
+		m.Register(r)
+	}
 }
