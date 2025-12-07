@@ -5,9 +5,13 @@ import (
 	"net/http"
 	"os"
 
+	hdoctors "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/doctors"
 	hpatients "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/patients"
+	cdoctors "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/doctors"
 	cpatients "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/patients"
+	dbdoctors "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
 	dbpatients "github.com/OPetricevic/physio-tracker/backend/internal/database/patients"
+	svcdoctors "github.com/OPetricevic/physio-tracker/backend/internal/services/doctors"
 	svcpatients "github.com/OPetricevic/physio-tracker/backend/internal/services/patients"
 	"github.com/gorilla/mux"
 	"gorm.io/driver/postgres"
@@ -35,6 +39,13 @@ func main() {
 	patientController := cpatients.NewController(patientSvc)
 	patientHandler := hpatients.NewHandler(patientController)
 	patientHandler.RegisterRoutes(r)
+
+	// Wire doctors handler
+	doctorRepo := dbdoctors.NewDoctorsRepository(db)
+	doctorSvc := svcdoctors.NewService(doctorRepo)
+	doctorController := cdoctors.NewController(doctorSvc)
+	doctorHandler := hdoctors.NewHandler(doctorController)
+	doctorHandler.RegisterRoutes(r)
 
 	server := &http.Server{
 		Addr:    ":" + addr,
