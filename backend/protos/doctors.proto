@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package patients.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
+
+message Doctor {
+  string uuid = 1;
+  string email = 2;
+  string username = 3;
+  string first_name = 4;
+  string last_name = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}

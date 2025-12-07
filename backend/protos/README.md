@@ -9,7 +9,9 @@ Example generation (requires `protoc`, `protoc-gen-go`, `protoc-gen-go-grpc`):
 cd backend/protos
 protoc --go_out=../golang --go_opt=paths=source_relative \
   --go-grpc_out=../golang --go-grpc_opt=paths=source_relative \
-  patients.proto
+  *.proto
 ```
 
 `go_package` is set to `github.com/OPetricevic/physio-tracker/backend/golang/patients`.
+
+Shortcut: from repo root, `make backend-proto` (checks for protoc and plugins, then regenerates Go code into `backend/golang`).

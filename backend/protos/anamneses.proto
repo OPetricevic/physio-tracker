@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package patients.v1;
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
+
+// Anamnesis represents a single visit/session note.
+message Anamnesis {
+  string uuid = 1;
+  string patient_uuid = 2;
+  string visit_reason = 3; // e.g., "Bol u vratu", "Koljeno", etc.
+  google.protobuf.StringValue anamnesis = 4; // session notes
+  google.protobuf.StringValue diagnosis = 5;
+  google.protobuf.StringValue therapy = 6;
+  google.protobuf.StringValue other_info = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+message CreateAnamnesisRequest {
+  string patient_uuid = 1;
+  string visit_reason = 2;
+  google.protobuf.StringValue anamnesis = 3;
+  google.protobuf.StringValue diagnosis = 4;
+  google.protobuf.StringValue therapy = 5;
+  google.protobuf.StringValue other_info = 6;
+  // Optional: previous visit UUIDs to include when generating a PDF for this visit.
+  repeated string include_visit_uuids = 7;
+}
+
+message UpdateAnamnesisRequest {
+  string uuid = 1;
+  string patient_uuid = 2;
+  string visit_reason = 3;
+  google.protobuf.StringValue anamnesis = 4;
+  google.protobuf.StringValue diagnosis = 5;
+  google.protobuf.StringValue therapy = 6;
+  google.protobuf.StringValue other_info = 7;
+  repeated string include_visit_uuids = 8;
+}
+
+message AnamnesisResponse {
+  Anamnesis anamnesis = 1;
+}
+
+message ListAnamnesesRequest {
+  string patient_uuid = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListAnamnesesResponse {
+  repeated Anamnesis anamneses = 1;
+}
+
+message GenerateAnamnesisPdfRequest {
+  string patient_uuid = 1;
+  string anamnesis_uuid = 2;
+  repeated string include_visit_uuids = 3; // visits to include in the PDF (newest-first ordering handled server-side)
+}
+
+message PdfResponse {
+  bytes data = 1;
+}
+
+service AnamnesisService {
+  rpc CreateAnamnesis(CreateAnamnesisRequest) returns (AnamnesisResponse);
+  rpc UpdateAnamnesis(UpdateAnamnesisRequest) returns (AnamnesisResponse);
+  rpc ListAnamneses(ListAnamnesesRequest) returns (ListAnamnesesResponse);
+  rpc GenerateAnamnesisPdf(GenerateAnamnesisPdfRequest) returns (PdfResponse);
+}

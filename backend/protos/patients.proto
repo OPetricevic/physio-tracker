@@ -21,18 +21,6 @@ message Patient {
   google.protobuf.Timestamp updated_at = 10; // nullable
 }
 
-// Anamnesis represents a single visit/session note.
-message Anamnesis {
-  string uuid = 1;
-  string patient_uuid = 2;
-  string note = 3;
-  google.protobuf.StringValue diagnosis = 4;
-  google.protobuf.StringValue therapy = 5;
-  google.protobuf.StringValue other_info = 6;
-  google.protobuf.StringValue visit_reason = 7;
-  google.protobuf.Timestamp created_at = 8;
-}
-
 message CreatePatientRequest {
   string doctor_uuid = 1;
   string first_name = 2;
@@ -70,55 +58,9 @@ message DeletePatientRequest {
   string uuid = 1;
 }
 
-message AddAnamnesisRequest {
-  string patient_uuid = 1;
-  string note = 2;
-  google.protobuf.StringValue diagnosis = 3;
-  google.protobuf.StringValue therapy = 4;
-  google.protobuf.StringValue other_info = 5;
-  google.protobuf.StringValue visit_reason = 6;
-}
-
-message AnamnesisResponse {
-  Anamnesis anamnesis = 1;
-}
-
-message ListAnamnesesRequest {
-  string patient_uuid = 1;
-  int32 page = 2;
-  int32 page_size = 3;
-}
-
-message ListAnamnesesResponse {
-  repeated Anamnesis anamneses = 1;
-}
-
-message GeneratePdfRequest {
-  string patient_uuid = 1;
-  string anamnesis_uuid = 2;
-  repeated string include_visit_uuids = 3; // visits to include (newest first in response)
-}
-
-message PdfResponse {
-  bytes data = 1;
-}
-
-message BackupPatientRequest {
-  string patient_uuid = 1;
-}
-
-message BackupResponse {
-  bytes data = 1;
-}
-
 service PatientsService {
   rpc CreatePatient(CreatePatientRequest) returns (PatientResponse);
   rpc UpdatePatient(UpdatePatientRequest) returns (PatientResponse);
   rpc DeletePatient(DeletePatientRequest) returns (PatientResponse);
   rpc ListPatients(ListPatientsRequest) returns (ListPatientsResponse);
-
-  rpc AddAnamnesis(AddAnamnesisRequest) returns (AnamnesisResponse);
-  rpc ListAnamneses(ListAnamnesesRequest) returns (ListAnamnesesResponse);
-  rpc GenerateAnamnesisPdf(GeneratePdfRequest) returns (PdfResponse);
-  rpc BackupPatient(BackupPatientRequest) returns (BackupResponse);
 }
