@@ -18,6 +18,10 @@ Use these steps to bring up the backend on a fresh machine (no DB yet) and to un
 - `backend/scripts/migrate.sh`  
   Applies SQL migrations (`0001_init.sql`, `0002_seed_admin.sql`) to the database pointed to by `DATABASE_URL`.
 
+- Windows equivalents:  
+  - `backend/scripts/bootstrap_postgres.ps1` (same defaults/env overrides as the `.sh` script)  
+  - `backend/scripts/migrate.ps1` (requires `DATABASE_URL`)
+
 ## Makefile shortcuts
 - `make backend-bootstrap` — runs the bootstrap script with defaults (override env vars as needed).
 - `make backend-migrate` — runs migrations using `DB_URL` (defaults to `postgres://postgres:postgres@localhost:5432/physio?sslmode=disable`).
