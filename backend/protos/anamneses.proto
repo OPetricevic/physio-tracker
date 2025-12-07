@@ -4,11 +4,15 @@ package patients.v1;
 
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
+import "gorm.proto";
 
 option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
 
 // Anamnesis represents a single visit/session note.
 message Anamnesis {
+  option (gorm.opts).ormable = true;
+  option (gorm.opts).table = "anamneses";
+
   string uuid = 1;
   string patient_uuid = 2;
   string visit_reason = 3; // e.g., "Bol u vratu", "Koljeno", etc.

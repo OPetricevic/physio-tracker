@@ -3,10 +3,14 @@ syntax = "proto3";
 package patients.v1;
 
 import "google/protobuf/timestamp.proto";
+import "gorm.proto";
 
 option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
 
 message Doctor {
+  option (gorm.opts).ormable = true;
+  option (gorm.opts).table = "doctors";
+
   string uuid = 1;
   string email = 2;
   string username = 3;

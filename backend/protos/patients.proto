@@ -4,11 +4,15 @@ package patients.v1;
 
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
+import "gorm.proto";
 
 option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
 
 // Patient represents a person under care.
 message Patient {
+  option (gorm.opts).ormable = true;
+  option (gorm.opts).table = "patients";
+
   string uuid = 1; // required
   string doctor_uuid = 2; // required
   string first_name = 3; // required
