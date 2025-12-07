@@ -21,6 +21,7 @@ Use these steps to bring up the backend on a fresh machine (no DB yet) and to un
 - Windows equivalents:  
   - `backend/scripts/bootstrap_postgres.ps1` (same defaults/env overrides as the `.sh` script)  
   - `backend/scripts/migrate.ps1` (requires `DATABASE_URL`)
+  - `backend/scripts/backup.ps1` (requires `DATABASE_URL`, optional `BACKUP_DIR`, `RETAIN_DAYS`; runs `pg_dump -Fc` with pruning)
 
 ## Makefile shortcuts
 - `make backend-bootstrap` — runs the bootstrap script with defaults (override env vars as needed).
@@ -43,6 +44,14 @@ Use these steps to bring up the backend on a fresh machine (no DB yet) and to un
    DB_URL="postgres://physio_app:physio_app_pass@localhost:5432/physio?sslmode=disable" make backend-run
    # or: cd backend && DATABASE_URL=... PORT=3600 go run ./cmd/server
    ```
+
+## Backups (Windows)
+- Ad-hoc: `cd backend && DATABASE_URL=... ./scripts/backup.ps1`
+- Suggested launcher flow for the doctor:
+  1) Run `backup.ps1` on start (pre-session snapshot).
+  2) Start backend binary/server.
+  3) On exit/stop, run `backup.ps1` again.
+- Daily scheduled backup (Task Scheduler): run `backup.ps1` with `DATABASE_URL` set; optionally set `BACKUP_DIR` and `RETAIN_DAYS`.
 
 ## Quick smoke test (after server is running)
 ```bash
