@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
 
@@ -18,26 +19,42 @@ func NewDoctorsRepository(db *gorm.DB) *DoctorsRepository {
 }
 
 func (r *DoctorsRepository) Create(ctx context.Context, d *pb.Doctor) (*pb.Doctor, error) {
-	if err := r.db.WithContext(ctx).Table("doctors").Create(protoToDoctorRecord(d)).Error; err != nil {
+	orm, err := d.ToORM(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("to ORM: %w", err)
+	}
+	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
 		return nil, fmt.Errorf("insert doctor: %w", err)
 	}
-	return d, nil
+	pbDoc, err := orm.ToPB(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("to PB: %w", err)
+	}
+	return &pbDoc, nil
 }
 
 func (r *DoctorsRepository) Update(ctx context.Context, d *pb.Doctor) (*pb.Doctor, error) {
-	res := r.db.WithContext(ctx).Table("doctors").Where("uuid = ?", d.GetUuid()).Updates(protoToDoctorRecord(d))
+	orm, err := d.ToORM(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("to ORM: %w", err)
+	}
+	res := r.db.WithContext(ctx).Model(&orm).Where("uuid = ?", d.GetUuid()).Updates(&orm)
 	if res.Error != nil {
 		return nil, fmt.Errorf("update doctor: %w", res.Error)
 	}
 	if res.RowsAffected == 0 {
 		return nil, fmt.Errorf("update doctor: %w", gorm.ErrRecordNotFound)
 	}
-	return d, nil
+	pbDoc, err := orm.ToPB(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("to PB: %w", err)
+	}
+	return &pbDoc, nil
 }
 
 func (r *DoctorsRepository) List(ctx context.Context, filter *pb.ListDoctorsRequest, limit, offset int) ([]*pb.Doctor, error) {
-	var models []doctorRecord
-	q := r.db.WithContext(ctx).Table("doctors")
+	var models []pb.DoctorORM
+	q := r.db.WithContext(ctx).Model(&pb.DoctorORM{})
 	if strings.TrimSpace(filter.GetQuery()) != "" {
 		like := "%" + strings.ToLower(strings.TrimSpace(filter.GetQuery())) + "%"
 		q = q.Where("LOWER(email) LIKE ? OR LOWER(username) LIKE ? OR LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ?", like, like, like, like)
@@ -48,19 +65,23 @@ func (r *DoctorsRepository) List(ctx context.Context, filter *pb.ListDoctorsRequ
 	if err := q.Order("created_at DESC").Find(&models).Error; err != nil {
 		return nil, fmt.Errorf("list doctors: %w", err)
 	}
-	return doctorRecordsToProto(models), nil
+	return doctorORMsToProto(ctx, models)
 }
 
 func (r *DoctorsRepository) Get(ctx context.Context, uuid string) (*pb.Doctor, error) {
-	var m doctorRecord
-	if err := r.db.WithContext(ctx).Table("doctors").Where("uuid = ?", uuid).First(&m).Error; err != nil {
+	var orm pb.DoctorORM
+	if err := r.db.WithContext(ctx).Where("uuid = ?", uuid).First(&orm).Error; err != nil {
 		return nil, fmt.Errorf("get doctor: %w", err)
 	}
-	return doctorRecordToProto(m), nil
+	pbDoc, err := orm.ToPB(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("to PB: %w", err)
+	}
+	return &pbDoc, nil
 }
 
 func (r *DoctorsRepository) Delete(ctx context.Context, uuid string) error {
-	res := r.db.WithContext(ctx).Table("doctors").Where("uuid = ?", uuid).Delete(&doctorRecord{})
+	res := r.db.WithContext(ctx).Where("uuid = ?", uuid).Delete(&pb.DoctorORM{})
 	if res.Error != nil {
 		return fmt.Errorf("delete doctor: %w", res.Error)
 	}
@@ -68,4 +89,20 @@ func (r *DoctorsRepository) Delete(ctx context.Context, uuid string) error {
 		return fmt.Errorf("delete doctor: %w", gorm.ErrRecordNotFound)
 	}
 	return nil
+}
+
+func doctorORMsToProto(ctx context.Context, orms []pb.DoctorORM) ([]*pb.Doctor, error) {
+	res := make([]*pb.Doctor, 0, len(orms))
+	for _, orm := range orms {
+		pbDoc, err := orm.ToPB(ctx)
+		if err != nil {
+			return nil, err
+		}
+		// Ensure timestamps are not nil for consistency
+		if pbDoc.CreatedAt == nil {
+			pbDoc.CreatedAt = timestamppb.New(orm.CreatedAt.AsTime())
+		}
+		res = append(res, &pbDoc)
+	}
+	return res, nil
 }
