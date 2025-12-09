@@ -3,7 +3,7 @@ syntax = "proto3";
 package patients.v1;
 
 import "google/protobuf/timestamp.proto";
-import "gorm.proto";
+import "gorm/gorm.proto";
 
 option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
 

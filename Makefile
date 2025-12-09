@@ -39,4 +39,4 @@ backend-proto:
 	@command -v $(PROTOC) >/dev/null || { echo "protoc not found; install protoc"; exit 1; }
 	@test -x $(PROTOC_GEN_GO) || { echo "protoc-gen-go missing; run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"; exit 1; }
 	@test -x $(PROTOC_GEN_GORM) || { echo "protoc-gen-gorm missing; run: go install github.com/infobloxopen/protoc-gen-gorm@latest"; exit 1; }
-	$(PROTOC) -I $(PROTO_DIR) --go_out=$(PROTO_OUT) --go_opt=paths=source_relative --gorm_out=$(PROTO_OUT) --gorm_opt=paths=source_relative $(PROTO_DIR)/*.proto
+	$(PROTOC) -I $(PROTO_DIR) --go_out=$(PROTO_OUT) --gorm_out=$(PROTO_OUT) $(PROTO_DIR)/*.proto
