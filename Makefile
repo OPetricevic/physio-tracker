@@ -5,7 +5,7 @@ PROTO_DIR := $(BACKEND_DIR)/protos
 PROTO_OUT := $(BACKEND_DIR)/golang
 PROTOC := protoc
 PROTOC_GEN_GO := $(shell go env GOPATH)/bin/protoc-gen-go
-PROTOC_GEN_GRPC := $(shell go env GOPATH)/bin/protoc-gen-go-grpc
+PROTOC_GEN_GORM := $(shell go env GOPATH)/bin/protoc-gen-gorm
 
 .PHONY: frontend-install frontend-dev frontend-build run backend-run backend-migrate backend-bootstrap backend-proto
 
@@ -38,4 +38,5 @@ backend-bootstrap:
 backend-proto:
 	@command -v $(PROTOC) >/dev/null || { echo "protoc not found; install protoc"; exit 1; }
 	@test -x $(PROTOC_GEN_GO) || { echo "protoc-gen-go missing; run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"; exit 1; }
-	$(PROTOC) -I $(PROTO_DIR) --go_out=$(PROTO_OUT) --go_opt=paths=source_relative $(PROTO_DIR)/*.proto
+	@test -x $(PROTOC_GEN_GORM) || { echo "protoc-gen-gorm missing; run: go install github.com/infobloxopen/protoc-gen-gorm@latest"; exit 1; }
+	$(PROTOC) -I $(PROTO_DIR) --go_out=$(PROTO_OUT) --go_opt=paths=source_relative --gorm_out=$(PROTO_OUT) --gorm_opt=paths=source_relative $(PROTO_DIR)/*.proto
