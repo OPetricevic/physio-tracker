@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
@@ -18,7 +18,7 @@ func NewDoctorsRepository(db *gorm.DB) *DoctorsRepository {
 	return &DoctorsRepository{db: db}
 }
 
-func (r *DoctorsRepository) Create(ctx context.Context, d *pb.Doctor) (*pb.Doctor, error) {
+func (r *DoctorsRepository) Create(ctx context.Context, d *pt.Doctor) (*pt.Doctor, error) {
 	orm, err := d.ToORM(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("to ORM: %w", err)
@@ -33,7 +33,7 @@ func (r *DoctorsRepository) Create(ctx context.Context, d *pb.Doctor) (*pb.Docto
 	return &pbDoc, nil
 }
 
-func (r *DoctorsRepository) Update(ctx context.Context, d *pb.Doctor) (*pb.Doctor, error) {
+func (r *DoctorsRepository) Update(ctx context.Context, d *pt.Doctor) (*pt.Doctor, error) {
 	orm, err := d.ToORM(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("to ORM: %w", err)
@@ -52,9 +52,9 @@ func (r *DoctorsRepository) Update(ctx context.Context, d *pb.Doctor) (*pb.Docto
 	return &pbDoc, nil
 }
 
-func (r *DoctorsRepository) List(ctx context.Context, filter *pb.ListDoctorsRequest, limit, offset int) ([]*pb.Doctor, error) {
-	var models []pb.DoctorORM
-	q := r.db.WithContext(ctx).Model(&pb.DoctorORM{})
+func (r *DoctorsRepository) List(ctx context.Context, filter *pt.ListDoctorsRequest, limit, offset int) ([]*pt.Doctor, error) {
+	var models []pt.DoctorORM
+	q := r.db.WithContext(ctx).Model(&pt.DoctorORM{})
 	if strings.TrimSpace(filter.GetQuery()) != "" {
 		like := "%" + strings.ToLower(strings.TrimSpace(filter.GetQuery())) + "%"
 		q = q.Where("LOWER(email) LIKE ? OR LOWER(username) LIKE ? OR LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ?", like, like, like, like)
@@ -68,8 +68,8 @@ func (r *DoctorsRepository) List(ctx context.Context, filter *pb.ListDoctorsRequ
 	return doctorORMsToProto(ctx, models)
 }
 
-func (r *DoctorsRepository) Get(ctx context.Context, uuid string) (*pb.Doctor, error) {
-	var orm pb.DoctorORM
+func (r *DoctorsRepository) Get(ctx context.Context, uuid string) (*pt.Doctor, error) {
+	var orm pt.DoctorORM
 	if err := r.db.WithContext(ctx).Where("uuid = ?", uuid).First(&orm).Error; err != nil {
 		return nil, fmt.Errorf("get doctor: %w", err)
 	}
@@ -81,7 +81,7 @@ func (r *DoctorsRepository) Get(ctx context.Context, uuid string) (*pb.Doctor, e
 }
 
 func (r *DoctorsRepository) Delete(ctx context.Context, uuid string) error {
-	res := r.db.WithContext(ctx).Where("uuid = ?", uuid).Delete(&pb.DoctorORM{})
+	res := r.db.WithContext(ctx).Where("uuid = ?", uuid).Delete(&pt.DoctorORM{})
 	if res.Error != nil {
 		return fmt.Errorf("delete doctor: %w", res.Error)
 	}
@@ -91,8 +91,8 @@ func (r *DoctorsRepository) Delete(ctx context.Context, uuid string) error {
 	return nil
 }
 
-func doctorORMsToProto(ctx context.Context, orms []pb.DoctorORM) ([]*pb.Doctor, error) {
-	res := make([]*pb.Doctor, 0, len(orms))
+func doctorORMsToProto(ctx context.Context, orms []pt.DoctorORM) ([]*pt.Doctor, error) {
+	res := make([]*pt.Doctor, 0, len(orms))
 	for _, orm := range orms {
 		pbDoc, err := orm.ToPB(ctx)
 		if err != nil {

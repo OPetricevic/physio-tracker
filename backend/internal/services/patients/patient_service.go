@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	patientspb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	out "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/patients"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -23,9 +23,9 @@ var (
 )
 
 type Service interface {
-	Create(ctx context.Context, req *patientspb.CreatePatientRequest) (*patientspb.Patient, error)
-	Update(ctx context.Context, req *patientspb.UpdatePatientRequest) (*patientspb.Patient, error)
-	List(ctx context.Context, req *patientspb.ListPatientsRequest, doctorUUID string, pageSize, currentPage int) ([]*patientspb.Patient, error)
+	Create(ctx context.Context, req *pt.CreatePatientRequest) (*pt.Patient, error)
+	Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt.Patient, error)
+	List(ctx context.Context, req *pt.ListPatientsRequest, doctorUUID string, pageSize, currentPage int) ([]*pt.Patient, error)
 	Delete(ctx context.Context, uuid string) error
 }
 
@@ -37,7 +37,7 @@ func NewService(repo out.Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) Create(ctx context.Context, req *patientspb.CreatePatientRequest) (*patientspb.Patient, error) {
+func (s *service) Create(ctx context.Context, req *pt.CreatePatientRequest) (*pt.Patient, error) {
 	if strings.TrimSpace(req.GetDoctorUuid()) == "" {
 		return nil, ErrInvalidRequest
 	}
@@ -45,7 +45,7 @@ func (s *service) Create(ctx context.Context, req *patientspb.CreatePatientReque
 		return nil, ErrInvalidRequest
 	}
 	now := time.Now().UTC()
-	p := &patientspb.Patient{
+	p := &pt.Patient{
 		Uuid:        uuid.NewString(),
 		DoctorUuid:  strings.TrimSpace(req.GetDoctorUuid()),
 		FirstName:   strings.TrimSpace(req.GetFirstName()),
@@ -67,7 +67,7 @@ func (s *service) Create(ctx context.Context, req *patientspb.CreatePatientReque
 	return created, nil
 }
 
-func (s *service) Update(ctx context.Context, req *patientspb.UpdatePatientRequest) (*patientspb.Patient, error) {
+func (s *service) Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt.Patient, error) {
 	if strings.TrimSpace(req.GetUuid()) == "" {
 		return nil, ErrInvalidRequest
 	}
@@ -105,7 +105,7 @@ func (s *service) Update(ctx context.Context, req *patientspb.UpdatePatientReque
 	return updated, nil
 }
 
-func (s *service) List(ctx context.Context, req *patientspb.ListPatientsRequest, doctorUUID string, pageSize, currentPage int) ([]*patientspb.Patient, error) {
+func (s *service) List(ctx context.Context, req *pt.ListPatientsRequest, doctorUUID string, pageSize, currentPage int) ([]*pt.Patient, error) {
 	if pageSize <= 0 {
 		pageSize = 20
 	}
