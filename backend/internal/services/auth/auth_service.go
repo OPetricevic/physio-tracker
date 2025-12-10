@@ -8,6 +8,7 @@ import (
 	"time"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/auth"
 	doctorsout "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/doctors"
 	credrepo "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
@@ -19,10 +20,10 @@ import (
 )
 
 var (
-	ErrInvalidRequest = errors.New("invalid request")
-	ErrNotFound       = errors.New("not found")
-	ErrConflict       = errors.New("conflict")
-	ErrUnauthorized   = errors.New("unauthorized")
+	ErrInvalidRequest = se.ErrInvalidRequest
+	ErrNotFound       = se.ErrNotFound
+	ErrConflict       = se.ErrConflict
+	ErrUnauthorized   = se.ErrUnauthorized
 )
 
 type Service interface {
@@ -97,7 +98,7 @@ func (s *service) Register(ctx context.Context, req *RegisterRequest) (*pb.AuthT
 
 func (s *service) Login(ctx context.Context, usernameOrEmail, password string) (*pb.AuthToken, error) {
 	if strings.TrimSpace(usernameOrEmail) == "" || strings.TrimSpace(password) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("login: %w", ErrInvalidRequest)
 	}
 	// find doctor by username or email
 	doc, err := s.findDoctor(ctx, usernameOrEmail)
@@ -149,7 +150,7 @@ func (s *service) issueToken(ctx context.Context, doctorUUID string) (*pb.AuthTo
 func (s *service) findDoctor(ctx context.Context, identifier string) (*pb.Doctor, error) {
 	doc, err := s.doctorRepo.GetByIdentifier(ctx, identifier)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, ErrNotFound) {
 			return nil, fmt.Errorf("find doctor: %w", ErrUnauthorized)
 		}
 		return nil, fmt.Errorf("find doctor: %w", err)

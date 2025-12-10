@@ -9,16 +9,12 @@ import (
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	out "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/doctors"
+	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
+	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrInvalidRequest = errors.New("invalid request")
-	ErrNotFound       = errors.New("not found")
-	ErrConflict       = errors.New("conflict")
 )
 
 type Service interface {
@@ -38,10 +34,10 @@ func NewService(repo out.Repository) Service {
 
 func (s *service) Create(ctx context.Context, req *pb.CreateDoctorRequest) (*pb.Doctor, error) {
 	if strings.TrimSpace(req.GetEmail()) == "" || strings.TrimSpace(req.GetUsername()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("create doctor: %w", se.ErrInvalidRequest)
 	}
 	if strings.TrimSpace(req.GetFirstName()) == "" || strings.TrimSpace(req.GetLastName()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("create doctor: %w", se.ErrInvalidRequest)
 	}
 	now := time.Now().UTC()
 	doc := &pb.Doctor{
@@ -56,7 +52,7 @@ func (s *service) Create(ctx context.Context, req *pb.CreateDoctorRequest) (*pb.
 	created, err := s.repo.Create(ctx, doc)
 	if err != nil {
 		if isUniqueViolation(err) {
-			return nil, ErrConflict
+			return nil, fmt.Errorf("create doctor: %w", se.ErrConflict)
 		}
 		return nil, fmt.Errorf("create doctor: %w", err)
 	}
@@ -65,20 +61,20 @@ func (s *service) Create(ctx context.Context, req *pb.CreateDoctorRequest) (*pb.
 
 func (s *service) Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.Doctor, error) {
 	if strings.TrimSpace(req.GetUuid()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("update doctor: %w", se.ErrInvalidRequest)
 	}
 	if strings.TrimSpace(req.GetEmail()) == "" || strings.TrimSpace(req.GetUsername()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("update doctor: %w", se.ErrInvalidRequest)
 	}
 	if strings.TrimSpace(req.GetFirstName()) == "" || strings.TrimSpace(req.GetLastName()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("update doctor: %w", se.ErrInvalidRequest)
 	}
 	existing, err := s.repo.Get(ctx, req.GetUuid())
 	if err != nil {
-		if errors.Is(err, ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrNotFound
+		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("update doctor: %w", se.ErrNotFound)
 		}
-		return nil, fmt.Errorf("load doctor for update: %w", err)
+		return nil, fmt.Errorf("update doctor: load doctor: %w", err)
 	}
 	existing.Email = strings.TrimSpace(req.GetEmail())
 	existing.Username = strings.TrimSpace(req.GetUsername())
@@ -89,11 +85,11 @@ func (s *service) Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.
 
 	updated, err := s.repo.Update(ctx, existing)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrNotFound
+		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("update doctor: %w", se.ErrNotFound)
 		}
 		if isUniqueViolation(err) {
-			return nil, ErrConflict
+			return nil, fmt.Errorf("update doctor: %w", se.ErrConflict)
 		}
 		return nil, fmt.Errorf("update doctor: %w", err)
 	}
@@ -102,11 +98,11 @@ func (s *service) Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.
 
 func (s *service) Delete(ctx context.Context, uuid string) error {
 	if strings.TrimSpace(uuid) == "" {
-		return ErrInvalidRequest
+		return fmt.Errorf("delete doctor: %w", se.ErrInvalidRequest)
 	}
 	if err := s.repo.Delete(ctx, uuid); err != nil {
-		if errors.Is(err, ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrNotFound
+		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("delete doctor: %w", se.ErrNotFound)
 		}
 		return fmt.Errorf("delete doctor: %w", err)
 	}

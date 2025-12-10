@@ -9,17 +9,13 @@ import (
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	out "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/patients"
+	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
+	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrInvalidRequest = errors.New("invalid request")
-	ErrNotFound       = errors.New("not found")
-	ErrConflict       = errors.New("conflict")
 )
 
 type Service interface {
@@ -39,10 +35,10 @@ func NewService(repo out.Repository) Service {
 
 func (s *service) Create(ctx context.Context, req *pt.CreatePatientRequest) (*pt.Patient, error) {
 	if strings.TrimSpace(req.GetDoctorUuid()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("create patient: %w", se.ErrInvalidRequest)
 	}
 	if strings.TrimSpace(req.GetFirstName()) == "" || strings.TrimSpace(req.GetLastName()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("create patient: %w", se.ErrInvalidRequest)
 	}
 	now := time.Now().UTC()
 	p := &pt.Patient{
@@ -60,7 +56,7 @@ func (s *service) Create(ctx context.Context, req *pt.CreatePatientRequest) (*pt
 	created, err := s.repo.Create(ctx, p)
 	if err != nil {
 		if isUniqueViolation(err) {
-			return nil, ErrConflict
+			return nil, fmt.Errorf("create patient: %w", se.ErrConflict)
 		}
 		return nil, fmt.Errorf("create patient: %w", err)
 	}
@@ -69,18 +65,18 @@ func (s *service) Create(ctx context.Context, req *pt.CreatePatientRequest) (*pt
 
 func (s *service) Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt.Patient, error) {
 	if strings.TrimSpace(req.GetUuid()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("update patient: %w", se.ErrInvalidRequest)
 	}
 	if strings.TrimSpace(req.GetDoctorUuid()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("update patient: %w", se.ErrInvalidRequest)
 	}
 	if strings.TrimSpace(req.GetFirstName()) == "" || strings.TrimSpace(req.GetLastName()) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("update patient: %w", se.ErrInvalidRequest)
 	}
 	existing, err := s.repo.Get(ctx, req.GetUuid())
 	if err != nil {
-		if errors.Is(err, ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrNotFound
+		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("update patient: %w", se.ErrNotFound)
 		}
 		return nil, fmt.Errorf("load patient for update: %w", err)
 	}
@@ -94,11 +90,11 @@ func (s *service) Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt
 	existing.UpdatedAt = timestamppb.New(now)
 	updated, err := s.repo.Update(ctx, existing)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrNotFound
+		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("update patient: %w", se.ErrNotFound)
 		}
 		if isUniqueViolation(err) {
-			return nil, ErrConflict
+			return nil, fmt.Errorf("update patient: %w", se.ErrConflict)
 		}
 		return nil, fmt.Errorf("update patient: %w", err)
 	}
@@ -122,11 +118,11 @@ func (s *service) List(ctx context.Context, req *pt.ListPatientsRequest, doctorU
 
 func (s *service) Delete(ctx context.Context, uuid string) error {
 	if strings.TrimSpace(uuid) == "" {
-		return ErrInvalidRequest
+		return fmt.Errorf("delete patient: %w", se.ErrInvalidRequest)
 	}
 	if err := s.repo.Delete(ctx, uuid); err != nil {
-		if errors.Is(err, ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrNotFound
+		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("delete patient: %w", se.ErrNotFound)
 		}
 		return fmt.Errorf("delete patient: %w", err)
 	}

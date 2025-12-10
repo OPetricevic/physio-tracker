@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	svc "github.com/OPetricevic/physio-tracker/backend/internal/services/doctors"
 	"github.com/gorilla/mux"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -32,9 +33,9 @@ func (c *DoctorController) CreateDoctor(w http.ResponseWriter, r *http.Request) 
 	doc, err := c.svc.Create(r.Context(), &req)
 	if err != nil {
 		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
+		case errors.Is(err, se.ErrInvalidRequest):
 			writeJSONError(w, "invalid_request", "create doctor: invalid request", http.StatusBadRequest)
-		case errors.Is(err, svc.ErrConflict):
+		case errors.Is(err, se.ErrConflict):
 			writeJSONError(w, "conflict", "create doctor: conflict", http.StatusConflict)
 		default:
 			writeJSONError(w, "internal_error", "create doctor: internal error", http.StatusInternalServerError)
@@ -59,11 +60,11 @@ func (c *DoctorController) UpdateDoctor(w http.ResponseWriter, r *http.Request) 
 	doc, err := c.svc.Update(r.Context(), &req)
 	if err != nil {
 		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
+		case errors.Is(err, se.ErrInvalidRequest):
 			writeJSONError(w, "invalid_request", "update doctor: invalid request", http.StatusBadRequest)
-		case errors.Is(err, svc.ErrNotFound):
+		case errors.Is(err, se.ErrNotFound):
 			writeJSONError(w, "not_found", "update doctor: not found", http.StatusNotFound)
-		case errors.Is(err, svc.ErrConflict):
+		case errors.Is(err, se.ErrConflict):
 			writeJSONError(w, "conflict", "update doctor: conflict", http.StatusConflict)
 		default:
 			writeJSONError(w, "internal_error", "update doctor: internal error", http.StatusInternalServerError)
@@ -78,9 +79,9 @@ func (c *DoctorController) DeleteDoctor(w http.ResponseWriter, r *http.Request) 
 	doctorUUID := vars["uuid"]
 	if err := c.svc.Delete(r.Context(), doctorUUID); err != nil {
 		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
+		case errors.Is(err, se.ErrInvalidRequest):
 			writeJSONError(w, "invalid_request", "delete doctor: invalid request", http.StatusBadRequest)
-		case errors.Is(err, svc.ErrNotFound):
+		case errors.Is(err, se.ErrNotFound):
 			writeJSONError(w, "not_found", "delete doctor: not found", http.StatusNotFound)
 		default:
 			writeJSONError(w, "internal_error", "delete doctor: internal error", http.StatusInternalServerError)

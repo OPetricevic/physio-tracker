@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	mwauth "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/middleware"
 	svc "github.com/OPetricevic/physio-tracker/backend/internal/services/patients"
 	"github.com/gorilla/mux"
@@ -51,11 +52,11 @@ func (c *PatientController) CreatePatient(w http.ResponseWriter, r *http.Request
 	p, err := c.svc.Create(r.Context(), &req)
 	if err != nil {
 		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
+		case errors.Is(err, se.ErrInvalidRequest):
 			writeJSONError(w, "invalid_request", "create patient: invalid request", http.StatusBadRequest)
-		case errors.Is(err, svc.ErrNotFound):
+		case errors.Is(err, se.ErrNotFound):
 			writeJSONError(w, "not_found", "create patient: not found", http.StatusNotFound)
-		case errors.Is(err, svc.ErrConflict):
+		case errors.Is(err, se.ErrConflict):
 			writeJSONError(w, "conflict", "create patient: conflict", http.StatusConflict)
 		default:
 			writeJSONError(w, "internal_error", "create patient: internal error", http.StatusInternalServerError)
@@ -86,11 +87,11 @@ func (c *PatientController) UpdatePatient(w http.ResponseWriter, r *http.Request
 	p, err := c.svc.Update(r.Context(), &req)
 	if err != nil {
 		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
+		case errors.Is(err, se.ErrInvalidRequest):
 			writeJSONError(w, "invalid_request", "update patient: invalid request", http.StatusBadRequest)
-		case errors.Is(err, svc.ErrNotFound):
+		case errors.Is(err, se.ErrNotFound):
 			writeJSONError(w, "not_found", "update patient: not found", http.StatusNotFound)
-		case errors.Is(err, svc.ErrConflict):
+		case errors.Is(err, se.ErrConflict):
 			writeJSONError(w, "conflict", "update patient: conflict", http.StatusConflict)
 		default:
 			writeJSONError(w, "internal_error", "update patient: internal error", http.StatusInternalServerError)
@@ -105,11 +106,11 @@ func (c *PatientController) DeletePatient(w http.ResponseWriter, r *http.Request
 	patientUUID := vars["uuid"]
 	if err := c.svc.Delete(r.Context(), patientUUID); err != nil {
 		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
+		case errors.Is(err, se.ErrInvalidRequest):
 			writeJSONError(w, "invalid_request", "delete patient: invalid request", http.StatusBadRequest)
-		case errors.Is(err, svc.ErrNotFound):
+		case errors.Is(err, se.ErrNotFound):
 			writeJSONError(w, "not_found", "delete patient: not found", http.StatusNotFound)
-		case errors.Is(err, svc.ErrConflict):
+		case errors.Is(err, se.ErrConflict):
 			writeJSONError(w, "conflict", "delete patient: conflict", http.StatusConflict)
 		default:
 			writeJSONError(w, "internal_error", "delete patient: internal error", http.StatusInternalServerError)
@@ -134,11 +135,11 @@ func (c *PatientController) ListPatients(w http.ResponseWriter, r *http.Request)
 	list, err := c.svc.List(r.Context(), req, doctorUUID, pageSize, currentPage)
 	if err != nil {
 		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
+		case errors.Is(err, se.ErrInvalidRequest):
 			writeJSONError(w, "invalid_request", "list patients: invalid request", http.StatusBadRequest)
-		case errors.Is(err, svc.ErrNotFound):
+		case errors.Is(err, se.ErrNotFound):
 			writeJSONError(w, "not_found", "list patients: not found", http.StatusNotFound)
-		case errors.Is(err, svc.ErrConflict):
+		case errors.Is(err, se.ErrConflict):
 			writeJSONError(w, "conflict", "list patients: conflict", http.StatusConflict)
 		default:
 			writeJSONError(w, "internal_error", "list patients: internal error", http.StatusInternalServerError)
