@@ -88,15 +88,16 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeAuthError(w http.ResponseWriter, action string, err error) {
+	msg := action + ": " + err.Error()
 	switch err {
 	case auth.ErrInvalidRequest:
-		writeJSON(w, map[string]string{"error": "invalid_request", "message": action + ": invalid request"}, http.StatusBadRequest)
+		writeJSON(w, map[string]string{"error": "invalid_request", "message": msg}, http.StatusBadRequest)
 	case auth.ErrConflict:
-		writeJSON(w, map[string]string{"error": "conflict", "message": action + ": conflict"}, http.StatusConflict)
+		writeJSON(w, map[string]string{"error": "conflict", "message": msg}, http.StatusConflict)
 	case auth.ErrUnauthorized:
-		writeJSON(w, map[string]string{"error": "unauthorized", "message": action + ": unauthorized"}, http.StatusUnauthorized)
+		writeJSON(w, map[string]string{"error": "unauthorized", "message": msg}, http.StatusUnauthorized)
 	default:
-		writeJSON(w, map[string]string{"error": "internal_error", "message": action + ": internal error"}, http.StatusInternalServerError)
+		writeJSON(w, map[string]string{"error": "internal_error", "message": msg}, http.StatusInternalServerError)
 	}
 }
 

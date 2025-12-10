@@ -3,6 +3,7 @@ package patients
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -41,7 +42,8 @@ func (c *PatientController) CreatePatient(w http.ResponseWriter, r *http.Request
 		return
 	}
 	var req pb.CreatePatientRequest
-	if err := jsonpb.Unmarshal(r.Body, &req); err != nil {
+	body, _ := io.ReadAll(r.Body)
+	if err := jsonpb.Unmarshal(body, &req); err != nil {
 		writeJSONError(w, "invalid_request", "create patient: invalid JSON", http.StatusBadRequest)
 		return
 	}
@@ -72,7 +74,8 @@ func (c *PatientController) UpdatePatient(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	patientUUID := vars["uuid"]
 	var req pb.UpdatePatientRequest
-	if err := jsonpb.Unmarshal(r.Body, &req); err != nil {
+	body, _ := io.ReadAll(r.Body)
+	if err := jsonpb.Unmarshal(body, &req); err != nil {
 		writeJSONError(w, "invalid_request", "update patient: invalid JSON", http.StatusBadRequest)
 		return
 	}
@@ -152,7 +155,12 @@ var jsonpb = &protojson.UnmarshalOptions{DiscardUnknown: true}
 func writeProto(w http.ResponseWriter, msg proto.Message, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = protojson.MarshalOptions{EmitUnpopulated: true, UseEnumNumbers: true}.Marshal(w, msg)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseEnumNumbers: true}.Marshal(msg)
+	if err != nil {
+		http.Error(w, "internal_error: failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	_, _ = w.Write(b)
 }
 
 func writeJSONError(w http.ResponseWriter, code, message string, status int) {

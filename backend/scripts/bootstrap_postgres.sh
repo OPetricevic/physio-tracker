@@ -6,8 +6,8 @@ set -euo pipefail
 
 DB_BOOTSTRAP_URL="${DB_BOOTSTRAP_URL:-postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable}"
 DB_NAME="${DB_NAME:-physio}"
-DB_APP_USER="${DB_APP_USER:-physio_app}"
-DB_APP_PASS="${DB_APP_PASS:-physio_app_pass}"
+DB_APP_USER="${DB_APP_USER:-physio}"
+DB_APP_PASS="${DB_APP_PASS:-physio}"
 
 psql "$DB_BOOTSTRAP_URL" <<SQL
 DO \$\$
@@ -17,15 +17,12 @@ BEGIN
    END IF;
 END
 \$\$;
-
-DO \$\$
-BEGIN
-   IF NOT EXISTS (SELECT FROM pg_database WHERE datname = '$DB_NAME') THEN
-      CREATE DATABASE $DB_NAME OWNER $DB_APP_USER;
-   END IF;
-END
-\$\$;
 SQL
 
+DB_EXISTS=$(psql "$DB_BOOTSTRAP_URL" -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'")
+if [ "$DB_EXISTS" != "1" ]; then
+  psql "$DB_BOOTSTRAP_URL" -c "CREATE DATABASE $DB_NAME OWNER $DB_APP_USER"
+fi
+
 echo "Bootstrap complete. App user: $DB_APP_USER DB: $DB_NAME"
-echo "Set DATABASE_URL=postgres://$DB_APP_USER:$DB_APP_PASS@localhost:5432/$DB_NAME?sslmode=disable"
+echo "Set DATABASE_URL=postgres://$DB_APP_USER:$DB_APP_PASS@localhost:5433/$DB_NAME?sslmode=disable"

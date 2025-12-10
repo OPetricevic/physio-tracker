@@ -12,9 +12,8 @@ type EditingState = {
 }
 
 export function ManagePatientsPage() {
-  const { patients, anamneses, updatePatient, deletePatient } = usePatients()
+  const { patients, anamneses, updatePatient, deletePatient, loading, error, searchTerm, setSearchTerm } = usePatients()
   const [editing, setEditing] = useState<EditingState>({})
-  const [searchTerm, setSearchTerm] = useState('')
   const [confirming, setConfirming] = useState<{ uuid: string; name: string; count: number } | null>(null)
 
   const filteredPatients = useMemo(() => {
@@ -41,11 +40,11 @@ export function ManagePatientsPage() {
     })
   }
 
-  const saveEdit = (uuid: string) => {
+  const saveEdit = async (uuid: string) => {
     const draft = editing[uuid]
     if (!draft) return
     if (!draft.firstName.trim() || !draft.lastName.trim()) return
-    updatePatient(uuid, {
+    await updatePatient(uuid, {
       firstName: draft.firstName.trim(),
       lastName: draft.lastName.trim(),
       phone: draft.phone?.trim() || undefined,
@@ -60,9 +59,9 @@ export function ManagePatientsPage() {
     setConfirming({ uuid, name: `${found.firstName} ${found.lastName}`, count })
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!confirming) return
-    deletePatient(confirming.uuid)
+    await deletePatient(confirming.uuid)
     cancelEdit(confirming.uuid)
     setConfirming(null)
   }
@@ -90,6 +89,8 @@ export function ManagePatientsPage() {
         </div>
 
         <div className="table">
+          {loading && <p className="muted-small">Učitavanje pacijenata...</p>}
+          {error && <p className="error-text">{error}</p>}
           <div className="table-head">
             <span>Pacijent</span>
             <span>Telefon</span>

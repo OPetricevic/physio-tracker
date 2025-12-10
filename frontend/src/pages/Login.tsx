@@ -8,12 +8,23 @@ export function LoginPage() {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!email.trim() || !password.trim()) return
-    login(email.trim())
-    navigate('/app', { replace: true })
+    try {
+      setLoading(true)
+      setError(null)
+      await login(email.trim(), password.trim())
+      navigate('/app', { replace: true })
+    } catch (err) {
+      setError('Prijava nije uspjela. Provjerite podatke i pokušajte ponovno.')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -47,12 +58,13 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-            />
-          </div>
-          <button type="submit" className="btn primary full">
-            Prijavi se
-          </button>
-        </form>
+          />
+        </div>
+        {error && <p className="error-text">{error}</p>}
+        <button type="submit" className="btn primary full" disabled={loading}>
+          Prijavi se
+        </button>
+      </form>
         <p className="muted-small">
           Nemate račun? <Link to="/register">Registrirajte se</Link>
         </p>

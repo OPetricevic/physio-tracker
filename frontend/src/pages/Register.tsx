@@ -7,14 +7,38 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const { register } = useAuth()
   const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!email.trim() || !password.trim() || password !== confirm) return
-    register(email.trim())
-    navigate('/app', { replace: true })
+    if (!email.trim() || !password.trim() || !username.trim() || !firstName.trim() || !lastName.trim()) return
+    if (password !== confirm) {
+      setError('Lozinke se ne podudaraju.')
+      return
+    }
+    try {
+      setLoading(true)
+      setError(null)
+      await register({
+        email: email.trim(),
+        username: username.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        password: password.trim(),
+      })
+      navigate('/app', { replace: true })
+    } catch (err) {
+      setError('Registracija nije uspjela. Provjerite podatke i pokušajte ponovno.')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -36,6 +60,40 @@ export function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+          </div>
+          <div className="field">
+            <label htmlFor="username">Korisničko ime</label>
+            <input
+              id="username"
+              name="username"
+              autoComplete="username"
+              placeholder="doktor"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field-grid">
+            <div className="field">
+              <label htmlFor="firstName">Ime</label>
+              <input
+                id="firstName"
+                name="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="lastName">Prezime</label>
+              <input
+                id="lastName"
+                name="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+            </div>
           </div>
           <div className="field">
             <label htmlFor="password">Lozinka</label>
@@ -63,7 +121,8 @@ export function RegisterPage() {
               required
             />
           </div>
-          <button type="submit" className="btn primary full">
+          {error && <p className="error-text">{error}</p>}
+          <button type="submit" className="btn primary full" disabled={loading}>
             Registriraj se
           </button>
         </form>

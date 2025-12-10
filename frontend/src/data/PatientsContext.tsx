@@ -1,9 +1,17 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { apiRequest } from '../api/client'
+import type { ListPatientsResponse, PatientDto } from '../api/dto'
+import { useAuth } from '../auth'
 import type { Anamnesis, Patient } from '../types'
 
 type PatientsContextValue = {
   patients: Patient[]
-  anamneses: Record<string, Anamnesis[]>
+  anamneses: Record<string, Anamnesis[]> // still local/offline until backend endpoints exist
+  loading: boolean
+  error: string | null
+  searchTerm: string
+  setSearchTerm: (term: string) => void
+  refresh: () => Promise<void>
   createPatient: (input: {
     firstName: string
     lastName: string
@@ -11,12 +19,12 @@ type PatientsContextValue = {
     address?: string
     dateOfBirth?: string
     sex?: string
-  }) => Patient
+  }) => Promise<Patient | null>
   updatePatient: (
     uuid: string,
     input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string },
-  ) => void
-  deletePatient: (uuid: string) => void
+  ) => Promise<void>
+  deletePatient: (uuid: string) => Promise<void>
   addAnamnesis: (
     patientUuid: string,
     input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string },
@@ -25,128 +33,134 @@ type PatientsContextValue = {
 
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined)
 
-const initialPatients: Patient[] = [
-  {
-    uuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
-    firstName: 'Mia',
-    lastName: 'Horvat',
-    phone: '+385 91 123 4567',
-    address: 'Ulica 1, Zagreb',
-    dateOfBirth: '1990-05-12',
-    sex: 'Ž',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    uuid: 'b5b0c4ad-4a2c-45b0-93f0-6ae9b94e8a22',
-    firstName: 'Luka',
-    lastName: 'Kovač',
-    phone: '+385 98 987 6543',
-    address: 'Ulica 2, Zagreb',
-    dateOfBirth: '1988-11-03',
-    sex: 'M',
-    createdAt: new Date().toISOString(),
-  },
-]
-
-const initialAnamneses: Record<string, Anamnesis[]> = {
-  '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11': [
-    {
-      uuid: '2c16b71b-5c9f-4f5c-8a3a-8e3f1d2b5c01',
-      patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
-      note: 'Početna evaluacija. Ograničena mobilnost ramena, zadane vježbe istezanja i hlađenje ledom.',
-      diagnosis: 'Tendinitis ramena',
-      therapy: 'Istezanja + led 3x dnevno',
-      otherInfo: 'Prvi dolazak',
-      visitReason: 'Bol u ramenu',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      uuid: '4a5bcf1e-1b6d-4d2c-a8f9-6f6edc2a9f11',
-      patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
-      note: 'Kontrola nakon 7 dana: poboljšana pokretljivost, dodane izometrijske vježbe i lagani otpor.',
-      diagnosis: 'Tendinitis ramena',
-      therapy: 'Istezanja + izometrijske vježbe',
-      otherInfo: 'Drugi dolazak',
-      visitReason: 'Bol u ramenu',
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      uuid: '7c2e1d9f-0f2b-4f0a-9c3d-3e5f2a1b7c22',
-      patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
-      note: 'Treći susret: manualna terapija, smanjen bol, zadržati program istezanja i dodati elastičnu traku.',
-      diagnosis: 'Tendinitis ramena',
-      therapy: 'Manualna terapija + traka',
-      otherInfo: 'Treći dolazak',
-      visitReason: 'Bol u ramenu',
-      createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      uuid: '9d1a6b3c-2f4e-4c8a-9b1d-5f6e7c8a9b33',
-      patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
-      note: 'Četvrti susret: stabilizacijske vježbe za rame, preporuka za hladni oblog nakon vježbanja.',
-      diagnosis: 'Tendinitis ramena',
-      therapy: 'Stabilizacijske vježbe',
-      otherInfo: 'Četvrti dolazak',
-      visitReason: 'Bol u ramenu',
-      createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      uuid: '1e3f5a7c-9b2d-4a5f-8c7e-0d1b2c3a4d44',
-      patientUuid: '8c3d0c66-7e6c-4a4a-8c5b-7d7d1b5f0a11',
-      note: 'Peti susret: skoro potpuni opseg pokreta, prelazak na održavanje 2x tjedno, upute za kućni program.',
-      diagnosis: 'Tendinitis ramena',
-      therapy: 'Održavanje 2x tjedno',
-      otherInfo: 'Peti dolazak',
-      visitReason: 'Bol u ramenu',
-      createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ],
+function dtoToPatient(dto: PatientDto): Patient {
+  return {
+    uuid: dto.uuid,
+    firstName: dto.first_name,
+    lastName: dto.last_name,
+    phone: dto.phone ?? undefined,
+    address: dto.address ?? undefined,
+    dateOfBirth: dto.date_of_birth ?? undefined,
+    sex: dto.sex ?? undefined,
+    createdAt: dto.created_at,
+    updatedAt: dto.updated_at ?? undefined,
+  }
 }
 
 export function PatientsProvider({ children }: { children: ReactNode }) {
-  const [patients, setPatients] = useState<Patient[]>(initialPatients)
-  const [anamneses, setAnamneses] = useState<Record<string, Anamnesis[]>>(initialAnamneses)
+  const { user } = useAuth()
+  const [patients, setPatients] = useState<Patient[]>([])
+  const [anamneses, setAnamneses] = useState<Record<string, Anamnesis[]>>({})
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
-  const createPatient = (input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string }) => {
-    const next: Patient = {
-      uuid: crypto.randomUUID(),
-      firstName: input.firstName,
-      lastName: input.lastName,
-      phone: input.phone,
-      address: input.address,
-      dateOfBirth: input.dateOfBirth,
-      sex: input.sex,
-      createdAt: new Date().toISOString(),
+  const refresh = async () => {
+    if (!user?.token) {
+      setPatients([])
+      return
     }
-    setPatients((prev) => [next, ...prev])
-    return next
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      params.set('page_size', '200')
+      params.set('current_page', '1')
+      if (searchTerm.trim()) params.set('query', searchTerm.trim())
+      const res = await apiRequest<ListPatientsResponse>(`/patients?${params.toString()}`, {
+        token: user.token,
+      })
+      setPatients(res.patients.map(dtoToPatient))
+    } catch (err) {
+      console.error(err)
+      setError('Ne možemo dohvatiti pacijente.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const updatePatient = (uuid: string, input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string }) => {
-    setPatients((prev) =>
-      prev.map((p) =>
-        p.uuid === uuid
-          ? {
-              ...p,
-              firstName: input.firstName,
-              lastName: input.lastName,
-              phone: input.phone,
-              address: input.address,
-              dateOfBirth: input.dateOfBirth,
-              sex: input.sex,
-            }
-          : p,
-      ),
-    )
+  useEffect(() => {
+    if (user?.token) {
+      void refresh()
+    } else {
+      setPatients([])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.token, searchTerm])
+
+  const createPatient = async (input: {
+    firstName: string
+    lastName: string
+    phone?: string
+    address?: string
+    dateOfBirth?: string
+    sex?: string
+  }) => {
+    if (!user?.token) return null
+    try {
+      const dto = await apiRequest<PatientDto>('/patients/create', {
+        method: 'POST',
+        token: user.token,
+        body: {
+          first_name: input.firstName,
+          last_name: input.lastName,
+          phone: input.phone || undefined,
+          address: input.address || undefined,
+          date_of_birth: input.dateOfBirth || undefined,
+          sex: input.sex || undefined,
+        },
+      })
+      const mapped = dtoToPatient(dto)
+      setPatients((prev) => [mapped, ...prev])
+      return mapped
+    } catch (err) {
+      console.error(err)
+      setError('Spremanje pacijenta nije uspjelo.')
+      return null
+    }
   }
 
-  const deletePatient = (uuid: string) => {
-    setPatients((prev) => prev.filter((p) => p.uuid !== uuid))
-    setAnamneses((prev) => {
-      const copy = { ...prev }
-      delete copy[uuid]
-      return copy
-    })
+  const updatePatient = async (
+    uuid: string,
+    input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string },
+  ) => {
+    if (!user?.token) return
+    try {
+      const dto = await apiRequest<PatientDto>(`/patients/${uuid}`, {
+        method: 'PATCH',
+        token: user.token,
+        body: {
+          uuid,
+          first_name: input.firstName,
+          last_name: input.lastName,
+          phone: input.phone || undefined,
+          address: input.address || undefined,
+          date_of_birth: input.dateOfBirth || undefined,
+          sex: input.sex || undefined,
+        },
+      })
+      const mapped = dtoToPatient(dto)
+      setPatients((prev) => prev.map((p) => (p.uuid === uuid ? mapped : p)))
+    } catch (err) {
+      console.error(err)
+      setError('Ažuriranje pacijenta nije uspjelo.')
+    }
+  }
+
+  const deletePatient = async (uuid: string) => {
+    if (!user?.token) return
+    try {
+      await apiRequest<null>(`/patients/${uuid}`, { method: 'DELETE', token: user.token })
+      setPatients((prev) => prev.filter((p) => p.uuid !== uuid))
+      setAnamneses((prev) => {
+        const copy = { ...prev }
+        delete copy[uuid]
+        return copy
+      })
+    } catch (err) {
+      console.error(err)
+      setError('Brisanje pacijenta nije uspjelo.')
+    }
   }
 
   const addAnamnesis = (
@@ -165,10 +179,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     }
     setAnamneses((prev) => {
       const existing = prev[patientUuid] ?? []
-      return {
-        ...prev,
-        [patientUuid]: [entry, ...existing],
-      }
+      return { ...prev, [patientUuid]: [entry, ...existing] }
     })
     return entry
   }
@@ -177,12 +188,17 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     () => ({
       patients,
       anamneses,
+      loading,
+      error,
+      searchTerm,
+      setSearchTerm,
+      refresh,
       createPatient,
       updatePatient,
       deletePatient,
       addAnamnesis,
     }),
-    [patients, anamneses],
+    [patients, anamneses, loading, error, searchTerm],
   )
 
   return <PatientsContext.Provider value={value}>{children}</PatientsContext.Provider>

@@ -3,8 +3,8 @@ package doctors
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
-	"strconv"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	svc "github.com/OPetricevic/physio-tracker/backend/internal/services/doctors"
@@ -21,20 +21,11 @@ func NewController(svc svc.Service) *DoctorController {
 	return &DoctorController{svc: svc}
 }
 
-func parsePositiveInt(val string, def int) int {
-	if val == "" {
-		return def
-	}
-	if n, err := strconv.Atoi(val); err == nil && n > 0 {
-		return n
-	}
-	return def
-}
-
 // HTTP helpers
 func (c *DoctorController) CreateDoctor(w http.ResponseWriter, r *http.Request) {
 	var req pb.CreateDoctorRequest
-	if err := jsonpb.Unmarshal(r.Body, &req); err != nil {
+	body, _ := io.ReadAll(r.Body)
+	if err := jsonpb.Unmarshal(body, &req); err != nil {
 		writeJSONError(w, "invalid_request", "create doctor: invalid JSON", http.StatusBadRequest)
 		return
 	}
@@ -57,7 +48,8 @@ func (c *DoctorController) UpdateDoctor(w http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	doctorUUID := vars["uuid"]
 	var req pb.UpdateDoctorRequest
-	if err := jsonpb.Unmarshal(r.Body, &req); err != nil {
+	body, _ := io.ReadAll(r.Body)
+	if err := jsonpb.Unmarshal(body, &req); err != nil {
 		writeJSONError(w, "invalid_request", "update doctor: invalid JSON", http.StatusBadRequest)
 		return
 	}
@@ -98,34 +90,18 @@ func (c *DoctorController) DeleteDoctor(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (c *DoctorController) ListDoctors(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	pageSize := parsePositiveInt(q.Get("page_size"), 20)
-	currentPage := parsePositiveInt(q.Get("current_page"), 1)
-	req := &pb.ListDoctorsRequest{
-		Query: q.Get("query"),
-	}
-	list, err := c.svc.List(r.Context(), req, pageSize, currentPage)
-	if err != nil {
-		switch {
-		case errors.Is(err, svc.ErrInvalidRequest):
-			writeJSONError(w, "invalid_request", "list doctors: invalid request", http.StatusBadRequest)
-		default:
-			writeJSONError(w, "internal_error", "list doctors: internal error", http.StatusInternalServerError)
-		}
-		return
-	}
-	resp := &pb.ListDoctorsResponse{Doctors: list}
-	writeProto(w, resp, http.StatusOK)
-}
-
 // local protojson helper
 var jsonpb = &protojson.UnmarshalOptions{DiscardUnknown: true}
 
 func writeProto(w http.ResponseWriter, msg proto.Message, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = protojson.MarshalOptions{EmitUnpopulated: true, UseEnumNumbers: true}.Marshal(w, msg)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseEnumNumbers: true}.Marshal(msg)
+	if err != nil {
+		http.Error(w, "internal_error: failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	_, _ = w.Write(b)
 }
 
 func writeJSONError(w http.ResponseWriter, code, message string, status int) {

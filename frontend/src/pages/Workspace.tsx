@@ -7,9 +7,8 @@ import type { Patient } from '../types'
 import '../App.css'
 
 export function WorkspacePage() {
-  const { patients, anamneses, createPatient, addAnamnesis } = usePatients()
+  const { patients, anamneses, createPatient, addAnamnesis, searchTerm, setSearchTerm, loading, error } = usePatients()
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
@@ -58,10 +57,12 @@ export function WorkspacePage() {
   const currentPage = Math.min(page, totalPages)
   const pagedAnamneses = sortedAnamneses.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
-  const handleCreatePatient = (input: { firstName: string; lastName: string; phone?: string }) => {
-    const next = createPatient(input)
-    setSelectedUuid(next.uuid)
-    setRecent((prev) => [next.uuid, ...prev.filter((id) => id !== next.uuid)].slice(0, 5))
+  const handleCreatePatient = async (input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string }) => {
+    const next = await createPatient(input)
+    if (next) {
+      setSelectedUuid(next.uuid)
+      setRecent((prev) => [next.uuid, ...prev.filter((id) => id !== next.uuid)].slice(0, 5))
+    }
   }
 
   const handleAddAnamnesis = (input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string }) => {
@@ -118,6 +119,8 @@ export function WorkspacePage() {
             </button>
           </div>
           {showForm && <PatientForm onCreate={handleCreatePatient} />}
+          {loading && <p className="muted-small">Učitavanje pacijenata...</p>}
+          {error && <p className="error-text">{error}</p>}
           <PatientList
             patients={filteredPatients}
             recentPatients={recentPatients}

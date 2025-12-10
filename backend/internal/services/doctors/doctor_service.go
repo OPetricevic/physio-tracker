@@ -24,8 +24,8 @@ var (
 type Service interface {
 	Create(ctx context.Context, req *pb.CreateDoctorRequest) (*pb.Doctor, error)
 	Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.Doctor, error)
-	List(ctx context.Context, req *pb.ListDoctorsRequest, pageSize, currentPage int) ([]*pb.Doctor, error)
 	Delete(ctx context.Context, uuid string) error
+	List(ctx context.Context, query string, pageSize, currentPage int) ([]*pb.Doctor, error)
 }
 
 type service struct {
@@ -100,21 +100,6 @@ func (s *service) Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.
 	return updated, nil
 }
 
-func (s *service) List(ctx context.Context, req *pb.ListDoctorsRequest, pageSize, currentPage int) ([]*pb.Doctor, error) {
-	if pageSize <= 0 {
-		pageSize = 20
-	}
-	if currentPage <= 0 {
-		currentPage = 1
-	}
-	offset := (currentPage - 1) * pageSize
-	list, err := s.repo.List(ctx, req, pageSize, offset)
-	if err != nil {
-		return nil, fmt.Errorf("list doctors: %w", err)
-	}
-	return list, nil
-}
-
 func (s *service) Delete(ctx context.Context, uuid string) error {
 	if strings.TrimSpace(uuid) == "" {
 		return ErrInvalidRequest
@@ -126,6 +111,21 @@ func (s *service) Delete(ctx context.Context, uuid string) error {
 		return fmt.Errorf("delete doctor: %w", err)
 	}
 	return nil
+}
+
+func (s *service) List(ctx context.Context, query string, pageSize, currentPage int) ([]*pb.Doctor, error) {
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if currentPage <= 0 {
+		currentPage = 1
+	}
+	offset := (currentPage - 1) * pageSize
+	list, err := s.repo.List(ctx, query, pageSize, offset)
+	if err != nil {
+		return nil, fmt.Errorf("list doctors: %w", err)
+	}
+	return list, nil
 }
 
 func isUniqueViolation(err error) bool {

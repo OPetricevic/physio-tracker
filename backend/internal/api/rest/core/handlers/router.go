@@ -17,6 +17,9 @@ import (
 // BuildRouter constructs the HTTP router with health, auth (public), and protected routes.
 func BuildRouter(db *gorm.DB) *mux.Router {
 	r := mux.NewRouter()
+	// order matters: recover first, then logging.
+	r.Use(mwauth.RecoverMiddleware)
+	r.Use(mwauth.LoggingMiddleware)
 
 	// Health
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

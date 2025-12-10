@@ -3,10 +3,8 @@ package auth
 import (
 	"context"
 	"fmt"
-	"time"
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
 

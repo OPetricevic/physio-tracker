@@ -7,6 +7,7 @@ export interface Patient {
   dateOfBirth?: string
   sex?: string
   createdAt: string
+  updatedAt?: string
 }
 
 export interface Anamnesis {

@@ -1,6 +1,7 @@
 FRONTEND_DIR := frontend
 BACKEND_DIR := backend
-DB_URL ?= postgres://postgres:postgres@localhost:5432/physio?sslmode=disable
+# default app creds (created by bootstrap script)
+DB_URL ?= postgres://physio:physio@localhost:5433/physio?sslmode=disable
 PROTO_DIR := $(BACKEND_DIR)/protos
 PROTO_OUT := $(BACKEND_DIR)/golang
 PROTOC := protoc
@@ -40,3 +41,10 @@ backend-proto:
 	@test -x $(PROTOC_GEN_GO) || { echo "protoc-gen-go missing; run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"; exit 1; }
 	@test -x $(PROTOC_GEN_GORM) || { echo "protoc-gen-gorm missing; run: go install github.com/infobloxopen/protoc-gen-gorm@latest"; exit 1; }
 	$(PROTOC) -I $(PROTO_DIR) --go_out=$(PROTO_OUT) --gorm_out=$(PROTO_OUT) $(PROTO_DIR)/*.proto
+
+# Run backend and frontend together (expects DB ready and npm install done)
+dev:
+	./scripts/dev.sh
+
+# Alias: generate protos (Go + gorm)
+proto: backend-proto

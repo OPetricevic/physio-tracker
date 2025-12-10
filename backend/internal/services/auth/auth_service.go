@@ -55,10 +55,10 @@ func NewService(doctorRepo doctorsout.Repository, credRepo credrepo.CredentialsR
 
 func (s *service) Register(ctx context.Context, req *RegisterRequest) (*pb.AuthToken, error) {
 	if strings.TrimSpace(req.Email) == "" || strings.TrimSpace(req.Username) == "" || strings.TrimSpace(req.Password) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("register: %w", ErrInvalidRequest)
 	}
 	if strings.TrimSpace(req.FirstName) == "" || strings.TrimSpace(req.LastName) == "" {
-		return nil, ErrInvalidRequest
+		return nil, fmt.Errorf("register: %w", ErrInvalidRequest)
 	}
 	now := time.Now().UTC()
 	doc := &pb.Doctor{
@@ -102,19 +102,19 @@ func (s *service) Login(ctx context.Context, usernameOrEmail, password string) (
 	// find doctor by username or email
 	doc, err := s.findDoctor(ctx, usernameOrEmail)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("login: %w", err)
 	}
 	cred, err := s.credRepo.GetByDoctor(ctx, doc.GetUuid())
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUnauthorized
+			return nil, fmt.Errorf("login: %w", ErrUnauthorized)
 		}
-		return nil, fmt.Errorf("get credentials: %w", err)
+		return nil, fmt.Errorf("login: get credentials: %w", err)
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(cred.GetPasswordHash()), []byte(password)); err != nil {
 		// Legacy plain-text fallback (should be removed once data is clean)
 		if cred.GetPasswordHash() != password {
-			return nil, ErrUnauthorized
+			return nil, fmt.Errorf("login: %w", ErrUnauthorized)
 		}
 	}
 	return s.issueToken(ctx, doc.GetUuid())
@@ -147,17 +147,14 @@ func (s *service) issueToken(ctx context.Context, doctorUUID string) (*pb.AuthTo
 }
 
 func (s *service) findDoctor(ctx context.Context, identifier string) (*pb.Doctor, error) {
-	// simple list filter to find by email/username; for bigger app use a dedicated repo method
-	list, err := s.doctorRepo.List(ctx, &pb.ListDoctorsRequest{Query: identifier}, 1, 0)
+	doc, err := s.doctorRepo.GetByIdentifier(ctx, identifier)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("find doctor: %w", ErrUnauthorized)
+		}
 		return nil, fmt.Errorf("find doctor: %w", err)
 	}
-	for _, d := range list {
-		if strings.EqualFold(d.GetEmail(), identifier) || strings.EqualFold(d.GetUsername(), identifier) {
-			return d, nil
-		}
-	}
-	return nil, ErrUnauthorized
+	return doc, nil
 }
 
 func isUniqueViolation(err error) bool {

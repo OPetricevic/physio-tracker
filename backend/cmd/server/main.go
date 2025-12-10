@@ -4,17 +4,23 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	corehandlers "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func main() {
 	addr := envOrDefault("PORT", "3600")
 
 	dsn := envOrDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/physio?sslmode=disable")
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		// Keep GORM output quiet (only errors); we log requests separately.
+		Logger: logger.Default.LogMode(logger.Error),
+		NowFunc: func() time.Time { return time.Now().UTC() },
+	})
 	if err != nil {
 		log.Fatalf("failed to connect db: %v", err)
 	}

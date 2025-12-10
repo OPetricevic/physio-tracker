@@ -18,7 +18,6 @@ func NewHandler(controller *ctrl.DoctorController) *DoctorHandler {
 
 func (h *DoctorHandler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/doctors/create", h.controller.CreateDoctor).Methods(http.MethodPost)
-	r.HandleFunc("/doctors", h.controller.ListDoctors).Methods(http.MethodGet)
 	r.HandleFunc("/doctors/{uuid}", h.controller.UpdateDoctor).Methods(http.MethodPatch)
 	r.HandleFunc("/doctors/{uuid}", h.controller.DeleteDoctor).Methods(http.MethodDelete)
 }

@@ -1,19 +1,36 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { apiRequest } from './api/client'
+import type { AuthLoginResponse } from './api/dto'
 
 type AuthUser = {
   email: string
+  doctorUuid: string
+  token: string
+  expiresAt: string
 }
 
 type AuthContextValue = {
   user: AuthUser | null
-  login: (email: string) => void
-  register: (email: string) => void
+  login: (identifier: string, password: string) => Promise<void>
+  register: (payload: {
+    email: string
+    username: string
+    firstName: string
+    lastName: string
+    password: string
+  }) => Promise<void>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 const STORAGE_KEY = 'physio-tracker:user'
+
+type LoginResponse = {
+  token: string
+  expires_at: string
+  doctor_uuid: string
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -38,11 +55,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const login = async (identifier: string, password: string) => {
+    const res = await apiRequest<LoginResponse>('/auth/login', {
+      method: 'POST',
+      body: { identifier, password },
+    })
+    setAndStore({
+      email: identifier,
+      doctorUuid: res.doctor_uuid,
+      token: res.token,
+      expiresAt: res.expires_at,
+    })
+  }
+
+  const register = async (payload: {
+    email: string
+    username: string
+    firstName: string
+    lastName: string
+    password: string
+  }) => {
+    const res = await apiRequest<LoginResponse>('/auth/register', {
+      method: 'POST',
+      body: {
+        email: payload.email,
+        username: payload.username,
+        first_name: payload.firstName,
+        last_name: payload.lastName,
+        password: payload.password,
+      },
+    })
+    setAndStore({
+      email: payload.email,
+      doctorUuid: res.doctor_uuid,
+      token: res.token,
+      expiresAt: res.expires_at,
+    })
+  }
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      login: (email: string) => setAndStore({ email }),
-      register: (email: string) => setAndStore({ email }),
+      login,
+      register,
       logout: () => setAndStore(null),
     }),
     [user],
