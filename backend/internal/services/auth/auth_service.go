@@ -8,6 +8,7 @@ import (
 	"time"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
 	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/auth"
 	doctorsout "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/doctors"
@@ -150,7 +151,7 @@ func (s *service) issueToken(ctx context.Context, doctorUUID string) (*pb.AuthTo
 func (s *service) findDoctor(ctx context.Context, identifier string) (*pb.Doctor, error) {
 	doc, err := s.doctorRepo.GetByIdentifier(ctx, identifier)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, ErrNotFound) {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, ErrNotFound) {
 			return nil, fmt.Errorf("find doctor: %w", ErrUnauthorized)
 		}
 		return nil, fmt.Errorf("find doctor: %w", err)

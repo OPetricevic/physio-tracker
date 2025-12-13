@@ -75,7 +75,7 @@ func (s *service) Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt
 	}
 	existing, err := s.repo.Get(ctx, req.GetUuid())
 	if err != nil {
-		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("update patient: %w", se.ErrNotFound)
 		}
 		return nil, fmt.Errorf("load patient for update: %w", err)
@@ -90,7 +90,7 @@ func (s *service) Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt
 	existing.UpdatedAt = timestamppb.New(now)
 	updated, err := s.repo.Update(ctx, existing)
 	if err != nil {
-		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("update patient: %w", se.ErrNotFound)
 		}
 		if isUniqueViolation(err) {
@@ -121,7 +121,7 @@ func (s *service) Delete(ctx context.Context, uuid string) error {
 		return fmt.Errorf("delete patient: %w", se.ErrInvalidRequest)
 	}
 	if err := s.repo.Delete(ctx, uuid); err != nil {
-		if errors.Is(err, se.ErrNotFound) || errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("delete patient: %w", se.ErrNotFound)
 		}
 		return fmt.Errorf("delete patient: %w", err)
