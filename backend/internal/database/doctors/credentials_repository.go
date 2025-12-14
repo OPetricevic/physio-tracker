@@ -2,9 +2,11 @@ package doctors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
+	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
 	"gorm.io/gorm"
 )
 
@@ -24,24 +26,50 @@ func NewCredentialsRepository(db *gorm.DB) CredentialsRepository {
 }
 
 func (r *credentialsRepo) Create(ctx context.Context, c *pt.DoctorCredentials) (*pt.DoctorCredentials, error) {
-	if err := r.db.WithContext(ctx).Table("doctor_credentials").Create(c).Error; err != nil {
-		return nil, fmt.Errorf("insert doctor credentials: %w", err)
+	orm, err := c.ToORM(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating credentials: convert to ORM: %w", err)
 	}
-	return c, nil
+	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
+		return nil, fmt.Errorf("creating credentials: insert: %w", err)
+	}
+	pbObj, err := orm.ToPB(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("creating credentials: convert to PB: %w", err)
+	}
+	return &pbObj, nil
 }
 
 func (r *credentialsRepo) GetByDoctor(ctx context.Context, doctorUUID string) (*pt.DoctorCredentials, error) {
-	var c pt.DoctorCredentials
-	if err := r.db.WithContext(ctx).Table("doctor_credentials").Where("doctor_uuid = ?", doctorUUID).First(&c).Error; err != nil {
-		return nil, fmt.Errorf("get doctor credentials: %w", err)
+	var orm pt.DoctorCredentialsORM
+	if err := r.db.WithContext(ctx).Where("doctor_uuid = ?", doctorUUID).First(&orm).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("getting credentials: %w", re.ErrNotFound)
+		}
+		return nil, fmt.Errorf("getting credentials: %w", err)
 	}
-	return &c, nil
+	pbObj, err := orm.ToPB(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("getting credentials: convert to PB: %w", err)
+	}
+	return &pbObj, nil
 }
 
 func (r *credentialsRepo) Update(ctx context.Context, c *pt.DoctorCredentials) (*pt.DoctorCredentials, error) {
-	res := r.db.WithContext(ctx).Table("doctor_credentials").Where("uuid = ?", c.GetUuid()).Updates(c)
-	if res.Error != nil {
-		return nil, fmt.Errorf("update doctor credentials: %w", res.Error)
+	orm, err := c.ToORM(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("updating credentials: convert to ORM: %w", err)
 	}
-	return c, nil
+	res := r.db.WithContext(ctx).Model(&orm).Where("uuid = ?", c.GetUuid()).Updates(&orm)
+	if res.Error != nil {
+		return nil, fmt.Errorf("updating credentials: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return nil, fmt.Errorf("updating credentials: %w", re.ErrNotFound)
+	}
+	pbObj, err := orm.ToPB(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("updating credentials: convert to PB: %w", err)
+	}
+	return &pbObj, nil
 }
