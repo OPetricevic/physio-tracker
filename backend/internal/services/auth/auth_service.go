@@ -72,10 +72,10 @@ func (s *service) Register(ctx context.Context, req *RegisterRequest) (*pb.AuthT
 		CreatedAt: timestamppb.New(now),
 		UpdatedAt: nil,
 	}
-	doc, err := s.doctorRepo.Create(ctx, doc)
-	if err != nil {
-		if isUniqueViolation(err) {
-			return nil, ErrConflict
+doc, err := s.doctorRepo.Create(ctx, doc)
+if err != nil {
+		if isUniqueViolation(err) || errors.Is(err, re.ErrConflict) {
+			return nil, fmt.Errorf("create doctor: %w", ErrConflict)
 		}
 		return nil, fmt.Errorf("create doctor: %w", err)
 	}

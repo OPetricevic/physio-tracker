@@ -6,6 +6,7 @@ import (
 	authh "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/auth"
 	authctrl "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/auth"
 	mwauth "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/middleware"
+	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/middleware"
 	dbauth "github.com/OPetricevic/physio-tracker/backend/internal/database/auth"
 	dbcreds "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
 	dbdoctors "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
@@ -20,6 +21,7 @@ func BuildRouter(db *gorm.DB) *mux.Router {
 	// order matters: recover first, then logging.
 	r.Use(mwauth.RecoverMiddleware)
 	r.Use(mwauth.LoggingMiddleware)
+	r.Use(middleware.CORSMiddleware)
 
 	// Health
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

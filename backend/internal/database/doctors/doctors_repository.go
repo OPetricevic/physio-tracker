@@ -8,6 +8,7 @@ import (
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -25,6 +26,9 @@ func (r *DoctorsRepository) Create(ctx context.Context, d *pt.Doctor) (*pt.Docto
 		return nil, fmt.Errorf("creating doctor: convert to ORM: %w", err)
 	}
 	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
+		if isUniqueViolation(err) {
+			return nil, fmt.Errorf("creating doctor: %w", re.ErrConflict)
+		}
 		return nil, fmt.Errorf("creating doctor: insert: %w", err)
 	}
 	pbDoc, err := orm.ToPB(ctx)
@@ -41,6 +45,9 @@ func (r *DoctorsRepository) Update(ctx context.Context, d *pt.Doctor) (*pt.Docto
 	}
 	res := r.db.WithContext(ctx).Model(&orm).Where("uuid = ?", d.GetUuid()).Updates(&orm)
 	if res.Error != nil {
+		if isUniqueViolation(res.Error) {
+			return nil, fmt.Errorf("updating doctor: %w", re.ErrConflict)
+		}
 		return nil, fmt.Errorf("updating doctor: %w", res.Error)
 	}
 	if res.RowsAffected == 0 {
@@ -122,4 +129,12 @@ func (r *DoctorsRepository) List(ctx context.Context, query string, limit, offse
 		res = append(res, &pbDoc)
 	}
 	return res, nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+	return false
 }

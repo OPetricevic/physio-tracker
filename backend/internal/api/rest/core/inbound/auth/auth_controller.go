@@ -2,9 +2,11 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/OPetricevic/physio-tracker/backend/internal/services/auth"
+	"github.com/jackc/pgconn"
 )
 
 type AuthController struct {
@@ -89,16 +91,25 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 
 func writeAuthError(w http.ResponseWriter, action string, err error) {
 	msg := action + ": " + err.Error()
-	switch err {
-	case auth.ErrInvalidRequest:
+	switch {
+	case errors.Is(err, auth.ErrInvalidRequest):
 		writeJSON(w, map[string]string{"error": "invalid_request", "message": msg}, http.StatusBadRequest)
-	case auth.ErrConflict:
-		writeJSON(w, map[string]string{"error": "conflict", "message": msg}, http.StatusConflict)
-	case auth.ErrUnauthorized:
-		writeJSON(w, map[string]string{"error": "unauthorized", "message": msg}, http.StatusUnauthorized)
+	case errors.Is(err, auth.ErrConflict) || isUniqueViolation(err):
+		// Friendly message for duplicate email/username conflicts.
+		writeJSON(w, map[string]string{"error": "conflict", "message": "email ili korisničko ime je već zauzeto"}, http.StatusConflict)
+	case errors.Is(err, auth.ErrUnauthorized):
+		writeJSON(w, map[string]string{"error": "unauthorized", "message": "pogrešni pristupni podaci"}, http.StatusUnauthorized)
 	default:
 		writeJSON(w, map[string]string{"error": "internal_error", "message": msg}, http.StatusInternalServerError)
 	}
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+	return false
 }
 
 func writeJSON(w http.ResponseWriter, payload interface{}, status int) {
