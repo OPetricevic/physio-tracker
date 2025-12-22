@@ -17,6 +17,5 @@ export interface Anamnesis {
   diagnosis?: string
   therapy?: string
   otherInfo?: string
-  visitReason?: string
   createdAt: string // Datum dolaska
 }

@@ -27,7 +27,7 @@ type PatientsContextValue = {
   deletePatient: (uuid: string) => Promise<void>
   addAnamnesis: (
     patientUuid: string,
-    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string },
+    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string },
   ) => Anamnesis | null
 }
 
@@ -167,7 +167,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
 
   const addAnamnesis = (
     patientUuid: string,
-    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string },
+    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string },
   ) => {
     const entry: Anamnesis = {
       uuid: crypto.randomUUID(),
@@ -176,7 +176,6 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       diagnosis: input.diagnosis,
       therapy: input.therapy,
       otherInfo: input.otherInfo,
-      visitReason: input.visitReason,
       createdAt: new Date().toISOString(),
     }
     setAnamneses((prev) => {

@@ -12,7 +12,6 @@ export function WorkspacePage() {
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
-  const [reasonFilter, setReasonFilter] = useState('')
   const [selectedVisits, setSelectedVisits] = useState<Set<string>>(new Set())
   const pageSize = 5
 
@@ -40,18 +39,7 @@ export function WorkspacePage() {
     let list = [...selectedAnamneses].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
-    if (reasonFilter) {
-      list = list.filter((a) => (a.visitReason || '').toLowerCase() === reasonFilter.toLowerCase())
-    }
     return list
-  }, [selectedAnamneses, reasonFilter])
-
-  const reasonOptions = useMemo(() => {
-    const set = new Set<string>()
-    selectedAnamneses.forEach((a) => {
-      if (a.visitReason) set.add(a.visitReason)
-    })
-    return Array.from(set)
   }, [selectedAnamneses])
   const totalPages = Math.max(1, Math.ceil(sortedAnamneses.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -65,7 +53,7 @@ export function WorkspacePage() {
     }
   }
 
-  const handleAddAnamnesis = (input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string; visitReason?: string }) => {
+  const handleAddAnamnesis = (input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string }) => {
     if (!selectedPatient) return
     addAnamnesis(selectedPatient.uuid, input)
     setPage(1)
@@ -142,9 +130,6 @@ export function WorkspacePage() {
               onAdd={handleAddAnamnesis}
               onGeneratePdf={handleGeneratePdf}
               onBackup={handleBackup}
-              reasonFilter={reasonFilter}
-              reasonOptions={reasonOptions}
-              onReasonFilterChange={setReasonFilter}
               selectedVisits={selectedVisits}
               onToggleVisit={handleToggleVisit}
               onBulkPdf={handleBulkPdf}

@@ -13,13 +13,9 @@ type Props = {
     diagnosis?: string
     therapy?: string
     otherInfo?: string
-    visitReason?: string
   }) => void
   onGeneratePdf: (anamnesisUuid: string) => void
   onBackup: () => void
-  reasonFilter: string
-  reasonOptions: string[]
-  onReasonFilterChange: (value: string) => void
   selectedVisits: Set<string>
   onToggleVisit: (uuid: string) => void
   onBulkPdf: () => void
@@ -35,9 +31,6 @@ export function AnamnesisPanel({
   onAdd,
   onGeneratePdf,
   onBackup,
-  reasonFilter,
-  reasonOptions,
-  onReasonFilterChange,
   selectedVisits,
   onToggleVisit,
   onBulkPdf,
@@ -46,7 +39,6 @@ export function AnamnesisPanel({
   const [diagnosis, setDiagnosis] = useState('')
   const [therapy, setTherapy] = useState('')
   const [otherInfo, setOtherInfo] = useState('')
-  const [visitReason, setVisitReason] = useState('')
   const [showForm, setShowForm] = useState(false)
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -57,13 +49,11 @@ export function AnamnesisPanel({
       diagnosis: diagnosis.trim() || undefined,
       therapy: therapy.trim() || undefined,
       otherInfo: otherInfo.trim() || undefined,
-      visitReason: visitReason.trim() || undefined,
     })
     setNote('')
     setDiagnosis('')
     setTherapy('')
     setOtherInfo('')
-    setVisitReason('')
   }
 
   return (
@@ -74,19 +64,6 @@ export function AnamnesisPanel({
           <h2>{patientName || 'Odaberite pacijenta'}</h2>
         </div>
         <div className="actions">
-          <select
-            className="select"
-            value={reasonFilter}
-            onChange={(e) => onReasonFilterChange(e.target.value)}
-            disabled={reasonOptions.length === 0}
-          >
-            <option value="">Svi razlozi</option>
-            {reasonOptions.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
           <button type="button" className="btn primary small" onClick={() => setShowForm(true)} disabled={disabled}>
             Novi zapis
           </button>
@@ -130,8 +107,7 @@ export function AnamnesisPanel({
               </button>
             </div>
             <p className="note__body">
-              <strong>Razlog posjete: </strong>
-              {entry.visitReason || 'Nije unesen'}
+              {entry.note}
             </p>
           </article>
           )
@@ -170,16 +146,6 @@ export function AnamnesisPanel({
             <p className="eyebrow">Novi zapis</p>
             <h3>Dodaj posjet</h3>
             <form className="composer" onSubmit={handleSubmit}>
-              <label htmlFor="visitReason">Razlog posjete</label>
-              <input
-                id="visitReason"
-                name="visitReason"
-                placeholder="Bol u vratu / koljenu..."
-                value={visitReason}
-                onChange={(e) => setVisitReason(e.target.value)}
-                disabled={disabled}
-              />
-
               <label htmlFor="note">Anamneza</label>
               <textarea
                 id="note"
