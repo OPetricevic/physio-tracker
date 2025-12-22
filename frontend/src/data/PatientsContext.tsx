@@ -64,7 +64,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     setError(null)
     try {
       const params = new URLSearchParams()
-      params.set('page_size', '200')
+      params.set('page_size', '10')
       params.set('current_page', '1')
       if (searchTerm.trim()) params.set('query', searchTerm.trim())
       const res = await apiRequest<ListPatientsResponse>(`/patients?${params.toString()}`, {

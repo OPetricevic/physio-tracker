@@ -8,6 +8,9 @@ type EditingState = {
     firstName: string
     lastName: string
     phone?: string
+    address?: string
+    dateOfBirth?: string
+    sex?: string
   }
 }
 
@@ -28,7 +31,14 @@ export function ManagePatientsPage() {
   const startEdit = (p: Patient) => {
     setEditing((prev) => ({
       ...prev,
-      [p.uuid]: { firstName: p.firstName, lastName: p.lastName, phone: p.phone },
+      [p.uuid]: {
+        firstName: p.firstName,
+        lastName: p.lastName,
+        phone: p.phone,
+        address: p.address,
+        dateOfBirth: p.dateOfBirth ? p.dateOfBirth.substring(0, 10) : '',
+        sex: p.sex,
+      },
     }))
   }
 
@@ -48,6 +58,9 @@ export function ManagePatientsPage() {
       firstName: draft.firstName.trim(),
       lastName: draft.lastName.trim(),
       phone: draft.phone?.trim() || undefined,
+      address: draft.address?.trim() || undefined,
+      dateOfBirth: draft.dateOfBirth?.trim() || undefined,
+      sex: draft.sex?.trim() || undefined,
     })
     cancelEdit(uuid)
   }
@@ -64,6 +77,12 @@ export function ManagePatientsPage() {
     await deletePatient(confirming.uuid)
     cancelEdit(confirming.uuid)
     setConfirming(null)
+  }
+
+  const formatDateHR = (value?: string) => {
+    if (!value) return 'Datum nije unesen'
+    const d = new Date(value)
+    return isNaN(d.getTime()) ? 'Datum nije unesen' : d.toLocaleDateString('hr-HR')
   }
 
   return (
@@ -91,9 +110,20 @@ export function ManagePatientsPage() {
         <div className="table">
           {loading && <p className="muted-small">Učitavanje pacijenata...</p>}
           {error && <p className="error-text">{error}</p>}
-          <div className="table-head">
+          <div
+            className="table-head"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1.4fr 1fr 1.1fr 0.9fr 0.5fr 0.4fr 0.9fr',
+              gap: '12px',
+              alignItems: 'center',
+            }}
+          >
             <span>Pacijent</span>
             <span>Telefon</span>
+            <span>Adresa</span>
+            <span>Datum rođenja</span>
+            <span>Spol</span>
             <span>Anamneze</span>
             <span>Akcije</span>
           </div>
@@ -101,7 +131,17 @@ export function ManagePatientsPage() {
             const draft = editing[p.uuid]
             const count = (anamneses[p.uuid] ?? []).length
             return (
-              <div key={p.uuid} className="table-row">
+              <div
+                key={p.uuid}
+                className="table-row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1.4fr 1fr 1.1fr 0.9fr 0.5fr 0.4fr 0.9fr',
+                  gap: '12px',
+                  alignItems: 'center',
+                  padding: '12px 14px',
+                }}
+              >
                 <div className="table-cell">
                   {draft ? (
                     <div className="field">
@@ -125,12 +165,9 @@ export function ManagePatientsPage() {
                       />
                     </div>
                   ) : (
-                    <div>
-                      <strong>
-                        {p.firstName} {p.lastName}
-                      </strong>
-                      <div className="muted-small">{new Date(p.createdAt).toLocaleDateString()}</div>
-                    </div>
+                    <strong>
+                      {p.firstName} {p.lastName}
+                    </strong>
                   )}
                 </div>
                 <div className="table-cell">
@@ -149,9 +186,59 @@ export function ManagePatientsPage() {
                   )}
                 </div>
                 <div className="table-cell">
+                  {draft ? (
+                    <input
+                      value={draft.address ?? ''}
+                      onChange={(e) =>
+                        setEditing((prev) => ({
+                          ...prev,
+                          [p.uuid]: { ...prev[p.uuid], address: e.target.value },
+                        }))
+                      }
+                    />
+                  ) : (
+                    <span>{p.address || 'Adresa nije unesena'}</span>
+                  )}
+                </div>
+                <div className="table-cell">
+                  {draft ? (
+                    <input
+                      type="date"
+                      value={draft.dateOfBirth ?? ''}
+                      onChange={(e) =>
+                        setEditing((prev) => ({
+                          ...prev,
+                          [p.uuid]: { ...prev[p.uuid], dateOfBirth: e.target.value },
+                        }))
+                      }
+                    />
+                  ) : (
+                    <span>{formatDateHR(p.dateOfBirth)}</span>
+                  )}
+                </div>
+                <div className="table-cell">
+                  {draft ? (
+                    <select
+                      value={draft.sex ?? ''}
+                      onChange={(e) =>
+                        setEditing((prev) => ({
+                          ...prev,
+                          [p.uuid]: { ...prev[p.uuid], sex: e.target.value },
+                        }))
+                      }
+                    >
+                      <option value="">Odaberite</option>
+                      <option value="M">M</option>
+                      <option value="Ž">Ž</option>
+                    </select>
+                  ) : (
+                    <span>{p.sex || 'Spol nije unesen'}</span>
+                  )}
+                </div>
+                <div className="table-cell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span className="pill">{count}</span>
                 </div>
-                <div className="table-cell actions">
+                <div className="table-cell actions" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                   {draft ? (
                     <>
                       <button className="btn primary small" onClick={() => saveEdit(p.uuid)}>
