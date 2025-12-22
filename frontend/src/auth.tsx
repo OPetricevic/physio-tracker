@@ -2,8 +2,6 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { apiRequest } from './api/client'
 import type { AuthLoginResponse } from './api/dto'
 
-const BYPASS_AUTH = import.meta.env.VITE_BYPASS_AUTH === 'true'
-
 type AuthUser = {
   email: string
   doctorUuid: string
@@ -45,13 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         window.localStorage.removeItem(STORAGE_KEY)
       }
-    } else if (BYPASS_AUTH) {
-      setAndStore({
-        email: 'dev@bypass.local',
-        doctorUuid: 'dev-bypass',
-        token: 'dev-token',
-        expiresAt: '2099-01-01T00:00:00Z',
-      })
     }
   }, [])
 
@@ -65,15 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = async (identifier: string, password: string) => {
-    if (BYPASS_AUTH) {
-      setAndStore({
-        email: identifier,
-        doctorUuid: 'dev-bypass',
-        token: 'dev-token',
-        expiresAt: '2099-01-01T00:00:00Z',
-      })
-      return
-    }
     const res = await apiRequest<LoginResponse>('/auth/login', {
       method: 'POST',
       body: { identifier, password },
@@ -93,15 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     lastName: string
     password: string
   }) => {
-    if (BYPASS_AUTH) {
-      setAndStore({
-        email: payload.email,
-        doctorUuid: 'dev-bypass',
-        token: 'dev-token',
-        expiresAt: '2099-01-01T00:00:00Z',
-      })
-      return
-    }
     const res = await apiRequest<LoginResponse>('/auth/register', {
       method: 'POST',
       body: {

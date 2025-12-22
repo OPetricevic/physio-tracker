@@ -91,10 +91,15 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 
 func writeAuthError(w http.ResponseWriter, action string, err error) {
 	msg := action + ": " + err.Error()
+	// Treat any unique constraint/duplicate as conflict, even if wrapped.
+	if isUniqueViolation(err) {
+		writeJSON(w, map[string]string{"error": "conflict", "message": "email ili korisničko ime je već zauzeto"}, http.StatusConflict)
+		return
+	}
 	switch {
 	case errors.Is(err, auth.ErrInvalidRequest):
 		writeJSON(w, map[string]string{"error": "invalid_request", "message": msg}, http.StatusBadRequest)
-	case errors.Is(err, auth.ErrConflict) || isUniqueViolation(err):
+	case errors.Is(err, auth.ErrConflict):
 		// Friendly message for duplicate email/username conflicts.
 		writeJSON(w, map[string]string{"error": "conflict", "message": "email ili korisničko ime je već zauzeto"}, http.StatusConflict)
 	case errors.Is(err, auth.ErrUnauthorized):

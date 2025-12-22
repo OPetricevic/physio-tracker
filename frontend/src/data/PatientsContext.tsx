@@ -104,6 +104,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         body: {
           first_name: input.firstName,
           last_name: input.lastName,
+          doctor_uuid: user.doctorUuid,
           phone: input.phone || undefined,
           address: input.address || undefined,
           date_of_birth: input.dateOfBirth || undefined,
@@ -131,6 +132,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         token: user.token,
         body: {
           uuid,
+          doctor_uuid: user.doctorUuid,
           first_name: input.firstName,
           last_name: input.lastName,
           phone: input.phone || undefined,

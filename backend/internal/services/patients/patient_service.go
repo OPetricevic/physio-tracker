@@ -70,9 +70,6 @@ func (s *service) Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt
 	if strings.TrimSpace(req.GetDoctorUuid()) == "" {
 		return nil, fmt.Errorf("update patient: %w", se.ErrInvalidRequest)
 	}
-	if strings.TrimSpace(req.GetFirstName()) == "" || strings.TrimSpace(req.GetLastName()) == "" {
-		return nil, fmt.Errorf("update patient: %w", se.ErrInvalidRequest)
-	}
 	existing, err := s.repo.Get(ctx, req.GetUuid())
 	if err != nil {
 		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
@@ -80,12 +77,26 @@ func (s *service) Update(ctx context.Context, req *pt.UpdatePatientRequest) (*pt
 		}
 		return nil, fmt.Errorf("load patient for update: %w", err)
 	}
-	existing.FirstName = strings.TrimSpace(req.GetFirstName())
-	existing.LastName = strings.TrimSpace(req.GetLastName())
-	existing.Phone = normalizeWrapper(req.Phone)
-	existing.Address = normalizeWrapper(req.Address)
-	existing.DateOfBirth = normalizeWrapper(req.DateOfBirth)
-	existing.Sex = normalizeWrapper(req.Sex)
+
+	// Patch-style updates: apply only fields provided (non-nil wrappers).
+	if req.FirstName != nil {
+		existing.FirstName = strings.TrimSpace(req.GetFirstName().GetValue())
+	}
+	if req.LastName != nil {
+		existing.LastName = strings.TrimSpace(req.GetLastName().GetValue())
+	}
+	if req.Phone != nil {
+		existing.Phone = normalizeWrapper(req.Phone)
+	}
+	if req.Address != nil {
+		existing.Address = normalizeWrapper(req.Address)
+	}
+	if req.DateOfBirth != nil {
+		existing.DateOfBirth = normalizeWrapper(req.DateOfBirth)
+	}
+	if req.Sex != nil {
+		existing.Sex = normalizeWrapper(req.Sex)
+	}
 	now := time.Now().UTC()
 	existing.UpdatedAt = timestamppb.New(now)
 	updated, err := s.repo.Update(ctx, existing)

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS doctors (
     username VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NULL DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS doctor_credentials (
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS patients (
     address VARCHAR(255),
     date_of_birth DATE,
     sex VARCHAR(20),
-    created_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NULL DEFAULT NULL
 );
 

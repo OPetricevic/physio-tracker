@@ -5,6 +5,7 @@ package patients.v1;
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
 import "gorm/gorm.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
 
@@ -26,9 +27,10 @@ message Patient {
 }
 
 message CreatePatientRequest {
-  string doctor_uuid = 1;
-  string first_name = 2;
-  string last_name = 3;
+  string doctor_uuid = 1 [(validate.rules).string = {uuid: true, min_bytes: 1}];
+  string first_name = 2 [(validate.rules).string = {min_bytes: 1}];
+  string last_name = 3 [(validate.rules).string = {min_bytes: 1}];
+  // Optional fields
   google.protobuf.StringValue phone = 4;
   google.protobuf.StringValue address = 5;
   google.protobuf.StringValue date_of_birth = 6;
@@ -48,10 +50,10 @@ message ListPatientsResponse {
 }
 
 message UpdatePatientRequest {
-  string uuid = 1;
-  string doctor_uuid = 2;
-  string first_name = 3;
-  string last_name = 4;
+  string uuid = 1 [(validate.rules).string = {uuid: true, min_bytes: 1}];
+  string doctor_uuid = 2 [(validate.rules).string = {uuid: true, min_bytes: 1}];
+  google.protobuf.StringValue first_name = 3;
+  google.protobuf.StringValue last_name = 4;
   google.protobuf.StringValue phone = 5;
   google.protobuf.StringValue address = 6;
   google.protobuf.StringValue date_of_birth = 7;

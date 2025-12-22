@@ -12,7 +12,7 @@ FRONTEND_DIR="$ROOT_DIR/frontend"
 # Env defaults (override via env when calling the script)
 export DATABASE_URL="${DATABASE_URL:-postgres://physio:physio@localhost:5433/physio?sslmode=disable}"
 export PORT="${PORT:-3600}"
-export VITE_API_URL="${VITE_API_URL:-http://localhost:3600}"
+export VITE_API_URL="${VITE_API_URL:-/api}"
 
 echo "Starting backend on :${PORT} (DATABASE_URL=${DATABASE_URL})"
 (

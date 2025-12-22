@@ -7,6 +7,9 @@ PROTO_OUT := $(BACKEND_DIR)/golang
 PROTOC := protoc
 PROTOC_GEN_GO := $(shell go env GOPATH)/bin/protoc-gen-go
 PROTOC_GEN_GORM := $(shell go env GOPATH)/bin/protoc-gen-gorm
+PROTOC_GEN_VALIDATE := $(shell go env GOPATH)/bin/protoc-gen-validate
+# Fixed include path for PGV (pinned to v0.6.13)
+VALIDATE_INC := $(shell go env GOPATH)/pkg/mod/github.com/envoyproxy/protoc-gen-validate@v0.6.13
 
 .PHONY: frontend-install frontend-dev frontend-build run backend-run backend-migrate backend-bootstrap backend-proto
 
@@ -40,7 +43,9 @@ backend-proto:
 	@command -v $(PROTOC) >/dev/null || { echo "protoc not found; install protoc"; exit 1; }
 	@test -x $(PROTOC_GEN_GO) || { echo "protoc-gen-go missing; run: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"; exit 1; }
 	@test -x $(PROTOC_GEN_GORM) || { echo "protoc-gen-gorm missing; run: go install github.com/infobloxopen/protoc-gen-gorm@latest"; exit 1; }
-	$(PROTOC) -I $(PROTO_DIR) --go_out=$(PROTO_OUT) --gorm_out=$(PROTO_OUT) $(PROTO_DIR)/*.proto
+	@test -x $(PROTOC_GEN_VALIDATE) || { echo "protoc-gen-validate missing; run: go install github.com/envoyproxy/protoc-gen-validate/cmd/protoc-gen-validate@latest"; exit 1; }
+	@test -d "$(VALIDATE_INC)" || { echo "validate proto include not found; ensure protoc-gen-validate v0.6.13 is downloaded"; exit 1; }
+	$(PROTOC) -I $(PROTO_DIR) -I $(VALIDATE_INC) --go_out=$(PROTO_OUT) --gorm_out=$(PROTO_OUT) --validate_out="lang=go,paths=source_relative:$(PROTO_OUT)" $(PROTO_DIR)/*.proto
 
 # Run backend and frontend together (expects DB ready and npm install done)
 dev:

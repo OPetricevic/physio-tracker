@@ -8,10 +8,10 @@ import (
 	"time"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
-	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
-	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/auth"
 	doctorsout "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/doctors"
+	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
+	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	credrepo "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -72,8 +72,8 @@ func (s *service) Register(ctx context.Context, req *RegisterRequest) (*pb.AuthT
 		CreatedAt: timestamppb.New(now),
 		UpdatedAt: nil,
 	}
-doc, err := s.doctorRepo.Create(ctx, doc)
-if err != nil {
+	doc, err := s.doctorRepo.Create(ctx, doc)
+	if err != nil {
 		if isUniqueViolation(err) || errors.Is(err, re.ErrConflict) {
 			return nil, fmt.Errorf("create doctor: %w", ErrConflict)
 		}
@@ -91,6 +91,9 @@ if err != nil {
 		PasswordUpdatedAt: timestamppb.New(now),
 	}
 	if _, err := s.credRepo.Create(ctx, cred); err != nil {
+		if errors.Is(err, re.ErrConflict) {
+			return nil, fmt.Errorf("create credentials: %w", se.ErrConflict)
+		}
 		return nil, fmt.Errorf("create credentials: %w", err)
 	}
 

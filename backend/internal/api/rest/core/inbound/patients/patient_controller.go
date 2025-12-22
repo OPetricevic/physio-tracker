@@ -1,19 +1,19 @@
 package patients
 
 import (
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strconv"
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
-	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	common "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/common"
 	mwauth "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/middleware"
+	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	svc "github.com/OPetricevic/physio-tracker/backend/internal/services/patients"
 	"github.com/gorilla/mux"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 type PatientController struct {
@@ -45,25 +45,29 @@ func (c *PatientController) CreatePatient(w http.ResponseWriter, r *http.Request
 	var req pb.CreatePatientRequest
 	body, _ := io.ReadAll(r.Body)
 	if err := jsonpb.Unmarshal(body, &req); err != nil {
-		writeJSONError(w, "invalid_request", "create patient: invalid JSON", http.StatusBadRequest)
+		common.WriteJSONError(w, "invalid_request", "create patient: invalid JSON", http.StatusBadRequest)
 		return
 	}
-	req.DoctorUuid = doctorUUID
+	req.DoctorUuid = doctorUUID // enforce ownership
+	if err := common.ValidateProto(&req); err != nil {
+		common.WriteJSONError(w, "invalid_request", "create patient: "+err.Error(), http.StatusBadRequest)
+		return
+	}
 	p, err := c.svc.Create(r.Context(), &req)
 	if err != nil {
 		switch {
 		case errors.Is(err, se.ErrInvalidRequest):
-			writeJSONError(w, "invalid_request", "create patient: invalid request", http.StatusBadRequest)
+			common.WriteJSONError(w, "invalid_request", "create patient: invalid request", http.StatusBadRequest)
 		case errors.Is(err, se.ErrNotFound):
-			writeJSONError(w, "not_found", "create patient: not found", http.StatusNotFound)
+			common.WriteJSONError(w, "not_found", "create patient: not found", http.StatusNotFound)
 		case errors.Is(err, se.ErrConflict):
-			writeJSONError(w, "conflict", "create patient: conflict", http.StatusConflict)
+			common.WriteJSONError(w, "conflict", "create patient: conflict", http.StatusConflict)
 		default:
-			writeJSONError(w, "internal_error", "create patient: internal error", http.StatusInternalServerError)
+			common.WriteJSONError(w, "internal_error", "create patient: internal error", http.StatusInternalServerError)
 		}
 		return
 	}
-	writeProto(w, p, http.StatusCreated)
+	common.WriteProto(w, p, http.StatusCreated)
 }
 
 func (c *PatientController) UpdatePatient(w http.ResponseWriter, r *http.Request) {
@@ -77,28 +81,32 @@ func (c *PatientController) UpdatePatient(w http.ResponseWriter, r *http.Request
 	var req pb.UpdatePatientRequest
 	body, _ := io.ReadAll(r.Body)
 	if err := jsonpb.Unmarshal(body, &req); err != nil {
-		writeJSONError(w, "invalid_request", "update patient: invalid JSON", http.StatusBadRequest)
+		common.WriteJSONError(w, "invalid_request", "update patient: invalid JSON", http.StatusBadRequest)
+		return
+	}
+	req.DoctorUuid = doctorUUID // enforce ownership
+	if err := common.ValidateProto(&req); err != nil {
+		common.WriteJSONError(w, "invalid_request", "update patient: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	if patientUUID != "" {
 		req.Uuid = patientUUID
 	}
-	req.DoctorUuid = doctorUUID
 	p, err := c.svc.Update(r.Context(), &req)
 	if err != nil {
 		switch {
 		case errors.Is(err, se.ErrInvalidRequest):
-			writeJSONError(w, "invalid_request", "update patient: invalid request", http.StatusBadRequest)
+			common.WriteJSONError(w, "invalid_request", "update patient: invalid request", http.StatusBadRequest)
 		case errors.Is(err, se.ErrNotFound):
-			writeJSONError(w, "not_found", "update patient: not found", http.StatusNotFound)
+			common.WriteJSONError(w, "not_found", "update patient: not found", http.StatusNotFound)
 		case errors.Is(err, se.ErrConflict):
-			writeJSONError(w, "conflict", "update patient: conflict", http.StatusConflict)
+			common.WriteJSONError(w, "conflict", "update patient: conflict", http.StatusConflict)
 		default:
-			writeJSONError(w, "internal_error", "update patient: internal error", http.StatusInternalServerError)
+			common.WriteJSONError(w, "internal_error", "update patient: internal error", http.StatusInternalServerError)
 		}
 		return
 	}
-	writeProto(w, p, http.StatusOK)
+	common.WriteProto(w, p, http.StatusOK)
 }
 
 func (c *PatientController) DeletePatient(w http.ResponseWriter, r *http.Request) {
@@ -107,13 +115,13 @@ func (c *PatientController) DeletePatient(w http.ResponseWriter, r *http.Request
 	if err := c.svc.Delete(r.Context(), patientUUID); err != nil {
 		switch {
 		case errors.Is(err, se.ErrInvalidRequest):
-			writeJSONError(w, "invalid_request", "delete patient: invalid request", http.StatusBadRequest)
+			common.WriteJSONError(w, "invalid_request", "delete patient: invalid request", http.StatusBadRequest)
 		case errors.Is(err, se.ErrNotFound):
-			writeJSONError(w, "not_found", "delete patient: not found", http.StatusNotFound)
+			common.WriteJSONError(w, "not_found", "delete patient: not found", http.StatusNotFound)
 		case errors.Is(err, se.ErrConflict):
-			writeJSONError(w, "conflict", "delete patient: conflict", http.StatusConflict)
+			common.WriteJSONError(w, "conflict", "delete patient: conflict", http.StatusConflict)
 		default:
-			writeJSONError(w, "internal_error", "delete patient: internal error", http.StatusInternalServerError)
+			common.WriteJSONError(w, "internal_error", "delete patient: internal error", http.StatusInternalServerError)
 		}
 		return
 	}
@@ -136,45 +144,18 @@ func (c *PatientController) ListPatients(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		switch {
 		case errors.Is(err, se.ErrInvalidRequest):
-			writeJSONError(w, "invalid_request", "list patients: invalid request", http.StatusBadRequest)
+			common.WriteJSONError(w, "invalid_request", "list patients: invalid request", http.StatusBadRequest)
 		case errors.Is(err, se.ErrNotFound):
-			writeJSONError(w, "not_found", "list patients: not found", http.StatusNotFound)
+			common.WriteJSONError(w, "not_found", "list patients: not found", http.StatusNotFound)
 		case errors.Is(err, se.ErrConflict):
-			writeJSONError(w, "conflict", "list patients: conflict", http.StatusConflict)
+			common.WriteJSONError(w, "conflict", "list patients: conflict", http.StatusConflict)
 		default:
-			writeJSONError(w, "internal_error", "list patients: internal error", http.StatusInternalServerError)
+			common.WriteJSONError(w, "internal_error", "list patients: internal error", http.StatusInternalServerError)
 		}
 		return
 	}
 	resp := &pb.ListPatientsResponse{Patients: list}
-	writeProto(w, resp, http.StatusOK)
+	common.WriteProto(w, resp, http.StatusOK)
 }
 
-// local protojson helper
 var jsonpb = &protojson.UnmarshalOptions{DiscardUnknown: true}
-
-func writeProto(w http.ResponseWriter, msg proto.Message, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseEnumNumbers: true}.Marshal(msg)
-	if err != nil {
-		http.Error(w, "internal_error: failed to encode response", http.StatusInternalServerError)
-		return
-	}
-	_, _ = w.Write(b)
-}
-
-func writeJSONError(w http.ResponseWriter, code, message string, status int) {
-	writeJSON(w, map[string]string{
-		"error":   code,
-		"message": message,
-	}, status)
-}
-
-func writeJSON(w http.ResponseWriter, payload interface{}, status int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		http.Error(w, "internal_error: failed to encode response", http.StatusInternalServerError)
-	}
-}
