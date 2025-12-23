@@ -4,16 +4,15 @@ import type { Anamnesis } from '../types'
 type Props = {
   patientName: string
   anamneses: Anamnesis[]
+  searchTerm: string
+  onSearchChange: (term: string) => void
   page: number
-  totalPages: number
+  hasNext: boolean
   onPageChange: (page: number) => void
   disabled: boolean
-  onAdd: (input: {
-    note: string
-    diagnosis?: string
-    therapy?: string
-    otherInfo?: string
-  }) => void
+  onAdd: (input: { note: string; diagnosis: string; therapy: string; otherInfo: string }) => void
+  onDelete: (uuid: string) => void
+  onUpdateIncludes: (uuid: string, includeVisitUuids: string[]) => Promise<void>
   onGeneratePdf: (anamnesisUuid: string) => void
   onBackup: () => void
   selectedVisits: Set<string>
@@ -24,31 +23,37 @@ type Props = {
 export function AnamnesisPanel({
   patientName,
   anamneses,
+  searchTerm,
+  onSearchChange,
   page,
-  totalPages,
+  hasNext,
   onPageChange,
   disabled,
   onAdd,
+  onDelete,
+  onUpdateIncludes,
   onGeneratePdf,
   onBackup,
-  selectedVisits,
-  onToggleVisit,
-  onBulkPdf,
 }: Props) {
   const [note, setNote] = useState('')
   const [diagnosis, setDiagnosis] = useState('')
   const [therapy, setTherapy] = useState('')
   const [otherInfo, setOtherInfo] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [selectionModal, setSelectionModal] = useState<{ open: boolean; currentId: string | null; selected: Set<string> }>({
+    open: false,
+    currentId: null,
+    selected: new Set(),
+  })
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!note.trim() || disabled) return
+    if (!note.trim() || !diagnosis.trim() || !therapy.trim() || disabled) return
     onAdd({
       note: note.trim(),
-      diagnosis: diagnosis.trim() || undefined,
-      therapy: therapy.trim() || undefined,
-      otherInfo: otherInfo.trim() || undefined,
+      diagnosis: diagnosis.trim(),
+      therapy: therapy.trim(),
+      otherInfo: otherInfo.trim(),
     })
     setNote('')
     setDiagnosis('')
@@ -64,6 +69,15 @@ export function AnamnesisPanel({
           <h2>{patientName || 'Odaberite pacijenta'}</h2>
         </div>
         <div className="actions">
+          <input
+            type="search"
+            className="select"
+            style={{ minWidth: 200 }}
+            placeholder="Traži po dijagnozi"
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            disabled={disabled}
+          />
           <button type="button" className="btn primary small" onClick={() => setShowForm(true)} disabled={disabled}>
             Novi zapis
           </button>
@@ -76,40 +90,47 @@ export function AnamnesisPanel({
       <div className="stack">
         {anamneses.length === 0 && <div className="empty">Nema unosa.</div>}
         {anamneses.map((entry) => {
-          const isSelected = selectedVisits.has(entry.uuid)
           return (
             <article
               key={entry.uuid}
-              className={`note ${isSelected ? 'is-selected' : ''}`}
-              role="button"
-              tabIndex={0}
-              onClick={() => !disabled && onToggleVisit(entry.uuid)}
-              onKeyDown={(e) => {
-                if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault()
-                  onToggleVisit(entry.uuid)
-                }
-              }}
+              className="note"
             >
               <div className="note__header">
                 <div>
                   <p className="note__eyebrow">Posjet</p>
-                  <strong>{new Date(entry.createdAt).toLocaleDateString()}</strong>
                 </div>
-              {isSelected && <span className="pill">Za PDF</span>}
-              <button
-                type="button"
-                className="btn text"
-                onClick={() => onGeneratePdf(entry.uuid)}
-                disabled={disabled}
-              >
-                Generiraj PDF
-              </button>
-            </div>
-            <p className="note__body">
-              {entry.note}
-            </p>
-          </article>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn text"
+                    onClick={() => {
+                      // open selection modal with current includes
+                      setSelectionModal({
+                        open: true,
+                        currentId: entry.uuid,
+                        selected: new Set(entry.includeVisitUuids ?? []),
+                      })
+                    }}
+                    disabled={disabled}
+                  >
+                    Generiraj PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="btn text danger"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onDelete(entry.uuid)
+                    }}
+                    disabled={disabled}
+                  >
+                    Obriši
+                  </button>
+                </div>
+              </div>
+              <p className="note__body"><strong>Datum posjete:</strong> {new Date(entry.createdAt).toLocaleDateString('hr-HR')}</p>
+              <p className="note__body"><strong>Dijagnoza:</strong> {entry.diagnosis}</p>
+            </article>
           )
         })}
         {anamneses.length > 0 && (
@@ -122,19 +143,14 @@ export function AnamnesisPanel({
             >
               ◀ Prethodne
             </button>
-            <span className="muted-small">
-              Stranica {page} / {totalPages}
-            </span>
+            <span className="muted-small">Stranica {page}</span>
             <button
               type="button"
               className="btn ghost small"
               onClick={() => onPageChange(page + 1)}
-              disabled={page >= totalPages}
+              disabled={!hasNext}
             >
               Sljedeće ▶
-            </button>
-            <button type="button" className="btn primary small" onClick={onBulkPdf} disabled={disabled || selectedVisits.size === 0}>
-              Odaberi za PDF
             </button>
           </div>
         )}
@@ -198,6 +214,63 @@ export function AnamnesisPanel({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {selectionModal.open && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p className="eyebrow">Odaberi posjete</p>
+            <h3>Uključi prethodne posjete u PDF</h3>
+            <div className="list" style={{ maxHeight: 300, overflowY: 'auto' }}>
+              {anamneses
+                .filter((a) => a.uuid !== selectionModal.currentId)
+                .map((a) => {
+                  const checked = selectionModal.selected.has(a.uuid)
+                  return (
+                    <label key={a.uuid} className="checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          setSelectionModal((prev) => {
+                            const next = new Set(prev.selected)
+                            if (e.target.checked) next.add(a.uuid)
+                            else next.delete(a.uuid)
+                            return { ...prev, selected: next }
+                          })
+                        }}
+                      />
+                      <span>
+                        {new Date(a.createdAt).toLocaleDateString('hr-HR')} — {a.diagnosis}
+                      </span>
+                    </label>
+                  )
+                })}
+              {anamneses.filter((a) => a.uuid !== selectionModal.currentId).length === 0 && (
+                <p className="muted-small">Nema prethodnih posjeta.</p>
+              )}
+            </div>
+            <div className="actions">
+              <button
+                className="btn ghost"
+                onClick={() => setSelectionModal({ open: false, currentId: null, selected: new Set() })}
+              >
+                Odustani
+              </button>
+              <button
+                className="btn primary"
+                onClick={async () => {
+                  if (!selectionModal.currentId) return
+                  await onUpdateIncludes(selectionModal.currentId, Array.from(selectionModal.selected))
+                  onGeneratePdf(selectionModal.currentId)
+                  setSelectionModal({ open: false, currentId: null, selected: new Set() })
+                }}
+              >
+                Spremi i generiraj
+              </button>
+            </div>
           </div>
         </div>
       )}

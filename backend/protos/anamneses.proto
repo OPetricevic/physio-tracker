@@ -5,6 +5,7 @@ package patients.v1;
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
 import "gorm/gorm.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
 
@@ -15,35 +16,33 @@ message Anamnesis {
 
   string uuid = 1;
   string patient_uuid = 2;
-  string visit_reason = 3; // e.g., "Bol u vratu", "Koljeno", etc.
-  google.protobuf.StringValue anamnesis = 4; // session notes
-  google.protobuf.StringValue diagnosis = 5;
-  google.protobuf.StringValue therapy = 6;
-  google.protobuf.StringValue other_info = 7;
+  string anamnesis = 3 [(validate.rules).string = {min_bytes: 1}]; // session notes
+  string diagnosis = 4 [(validate.rules).string = {min_bytes: 1}];
+  string therapy = 5 [(validate.rules).string = {min_bytes: 1}];
+  string other_info = 6; // optional
+  // Stored list of previously linked visits for PDF regeneration.
+  repeated string include_visit_uuids = 7;
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp updated_at = 9;
 }
 
 message CreateAnamnesisRequest {
-  string patient_uuid = 1;
-  string visit_reason = 2;
-  google.protobuf.StringValue anamnesis = 3;
-  google.protobuf.StringValue diagnosis = 4;
-  google.protobuf.StringValue therapy = 5;
-  google.protobuf.StringValue other_info = 6;
-  // Optional: previous visit UUIDs to include when generating a PDF for this visit.
-  repeated string include_visit_uuids = 7;
+  string patient_uuid = 1 [(validate.rules).string = {uuid: true, min_bytes: 1}];
+  string anamnesis = 2 [(validate.rules).string = {min_bytes: 1}];
+  string diagnosis = 3 [(validate.rules).string = {min_bytes: 1}];
+  string therapy = 4 [(validate.rules).string = {min_bytes: 1}];
+  string other_info = 5;
+  repeated string include_visit_uuids = 6;
 }
 
 message UpdateAnamnesisRequest {
-  string uuid = 1;
-  string patient_uuid = 2;
-  string visit_reason = 3;
-  google.protobuf.StringValue anamnesis = 4;
-  google.protobuf.StringValue diagnosis = 5;
-  google.protobuf.StringValue therapy = 6;
-  google.protobuf.StringValue other_info = 7;
-  repeated string include_visit_uuids = 8;
+  string uuid = 1 [(validate.rules).string = {uuid: true, min_bytes: 1}];
+  string patient_uuid = 2 [(validate.rules).string = {uuid: true, min_bytes: 1}];
+  string anamnesis = 3 [(validate.rules).string = {min_bytes: 1}];
+  string diagnosis = 4 [(validate.rules).string = {min_bytes: 1}];
+  string therapy = 5 [(validate.rules).string = {min_bytes: 1}];
+  string other_info = 6;
+  repeated string include_visit_uuids = 7;
 }
 
 message AnamnesisResponse {

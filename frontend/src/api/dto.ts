@@ -16,6 +16,26 @@ export type ListPatientsResponse = {
   patients: PatientDto[]
 }
 
+export type AnamnesisDto = {
+  uuid: string
+  patient_uuid: string
+  anamnesis: string
+  diagnosis: string
+  therapy: string
+  other_info: string
+  include_visit_uuids?: string[] | null
+  created_at: string
+  updated_at?: string | null
+}
+
+export type ListAnamnesesResponse = {
+  anamneses: AnamnesisDto[]
+}
+
+export type UpdateAnamnesisPayload = {
+  include_visit_uuids?: string[]
+}
+
 export type AuthLoginResponse = {
   token: string
   expires_at: string

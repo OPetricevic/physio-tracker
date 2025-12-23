@@ -2,11 +2,15 @@ package handlers
 
 import (
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/doctors"
+	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/anamneses"
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/patients"
+	canamneses "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/anamneses"
 	cdoctors "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/doctors"
 	cpatients "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/patients"
+	dbanamneses "github.com/OPetricevic/physio-tracker/backend/internal/database/anamneses"
 	dbdoctors "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
 	dbpatients "github.com/OPetricevic/physio-tracker/backend/internal/database/patients"
+	svcanamneses "github.com/OPetricevic/physio-tracker/backend/internal/services/anamneses"
 	svcdoctors "github.com/OPetricevic/physio-tracker/backend/internal/services/doctors"
 	svcpatients "github.com/OPetricevic/physio-tracker/backend/internal/services/patients"
 	"github.com/gorilla/mux"
@@ -22,6 +26,7 @@ type Module interface {
 var moduleBuilders = []func(*gorm.DB) Module{
 	NewPatientModule,
 	NewDoctorModule,
+	NewAnamnesisModule,
 }
 
 // Patient module wiring (repo -> service -> controller -> handler).
@@ -53,5 +58,21 @@ func NewDoctorModule(db *gorm.DB) Module {
 }
 
 func (m *doctorModule) Register(r *mux.Router) {
+	m.handler.RegisterRoutes(r)
+}
+
+// Anamnesis module wiring.
+type anamnesisModule struct {
+	handler *anamneses.Handler
+}
+
+func NewAnamnesisModule(db *gorm.DB) Module {
+	repo := dbanamneses.NewRepository(db)
+	svc := svcanamneses.NewService(repo)
+	ctrl := canamneses.NewController(svc)
+	return &anamnesisModule{handler: anamneses.NewHandler(ctrl)}
+}
+
+func (m *anamnesisModule) Register(r *mux.Router) {
 	m.handler.RegisterRoutes(r)
 }

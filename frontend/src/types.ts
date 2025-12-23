@@ -14,8 +14,10 @@ export interface Anamnesis {
   uuid: string
   patientUuid: string
   note: string // Anamneza
-  diagnosis?: string
-  therapy?: string
-  otherInfo?: string
+  diagnosis: string
+  therapy: string
+  otherInfo: string
+  includeVisitUuids?: string[]
   createdAt: string // Datum dolaska
+  updatedAt?: string
 }

@@ -1,12 +1,14 @@
+/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-hooks/exhaustive-deps */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { apiRequest } from '../api/client'
-import type { ListPatientsResponse, PatientDto } from '../api/dto'
+import type { AnamnesisDto, ListAnamnesesResponse, ListPatientsResponse, PatientDto } from '../api/dto'
 import { useAuth } from '../auth'
 import type { Anamnesis, Patient } from '../types'
 
 type PatientsContextValue = {
   patients: Patient[]
-  anamneses: Record<string, Anamnesis[]> // still local/offline until backend endpoints exist
+  anamneses: Record<string, Anamnesis[]>
   loading: boolean
   error: string | null
   searchTerm: string
@@ -25,10 +27,20 @@ type PatientsContextValue = {
     input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string },
   ) => Promise<void>
   deletePatient: (uuid: string) => Promise<void>
-  addAnamnesis: (
+  fetchAnamneses: (
     patientUuid: string,
-    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string },
-  ) => Anamnesis | null
+    opts?: { query?: string; page?: number; pageSize?: number },
+  ) => Promise<{ items: Anamnesis[]; hasNext: boolean }>
+  createAnamnesis: (
+    patientUuid: string,
+    input: { note: string; diagnosis: string; therapy: string; otherInfo: string; includeVisitUuids?: string[] },
+  ) => Promise<Anamnesis | null>
+  deleteAnamnesis: (patientUuid: string, uuid: string) => Promise<void>
+  updateAnamnesis: (
+    patientUuid: string,
+    uuid: string,
+    payload: UpdateAnamnesisPayload,
+  ) => Promise<Anamnesis | null>
 }
 
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined)
@@ -42,6 +54,20 @@ function dtoToPatient(dto: PatientDto): Patient {
     address: dto.address ?? undefined,
     dateOfBirth: dto.date_of_birth ?? undefined,
     sex: dto.sex ?? undefined,
+    createdAt: dto.created_at,
+    updatedAt: dto.updated_at ?? undefined,
+  }
+}
+
+function dtoToAnamnesis(dto: AnamnesisDto): Anamnesis {
+  return {
+    uuid: dto.uuid,
+    patientUuid: dto.patient_uuid,
+    note: dto.anamnesis,
+    diagnosis: dto.diagnosis,
+    therapy: dto.therapy,
+    otherInfo: dto.other_info,
+    includeVisitUuids: dto.include_visit_uuids ?? undefined,
     createdAt: dto.created_at,
     updatedAt: dto.updated_at ?? undefined,
   }
@@ -85,7 +111,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     } else {
       setPatients([])
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [user?.token, searchTerm])
 
   const createPatient = async (input: {
@@ -165,28 +191,104 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const addAnamnesis = (
+  const fetchAnamneses = async (
     patientUuid: string,
-    input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string },
-  ) => {
-    const entry: Anamnesis = {
-      uuid: crypto.randomUUID(),
-      patientUuid,
-      note: input.note,
-      diagnosis: input.diagnosis,
-      therapy: input.therapy,
-      otherInfo: input.otherInfo,
-      createdAt: new Date().toISOString(),
-    }
-    setAnamneses((prev) => {
-      const existing = prev[patientUuid] ?? []
-      return { ...prev, [patientUuid]: [entry, ...existing] }
-    })
-    return entry
+    opts: { query?: string; page?: number; pageSize?: number } = {},
+  ): Promise<{ items: Anamnesis[]; hasNext: boolean }> => {
+    if (!user?.token) return { items: [], hasNext: false }
+    const page = opts.page ?? 1
+    const pageSize = opts.pageSize ?? 5
+    const params = new URLSearchParams()
+    params.set('current_page', String(page))
+    params.set('page_size', String(pageSize))
+    if (opts.query?.trim()) params.set('query', opts.query.trim())
+    const res = await apiRequest<ListAnamnesesResponse>(
+      `/patients/${patientUuid}/anamneses?${params.toString()}`,
+      { token: user.token },
+    )
+    const items = res.anamneses.map(dtoToAnamnesis)
+    // Simple hasNext heuristic: if we got a full page, we assume there may be more.
+    const hasNext = items.length === pageSize
+    // Cache by patient
+    setAnamneses((prev) => ({ ...prev, [patientUuid]: items }))
+    return { items, hasNext }
   }
 
-  const value = useMemo<PatientsContextValue>(
-    () => ({
+  const createAnamnesis = async (
+    patientUuid: string,
+    input: { note: string; diagnosis: string; therapy: string; otherInfo: string; includeVisitUuids?: string[] },
+  ) => {
+    if (!user?.token) return null
+    try {
+      const dto = await apiRequest<AnamnesisDto>(`/patients/${patientUuid}/anamneses`, {
+        method: 'POST',
+        token: user.token,
+        body: {
+          anamnesis: input.note,
+          diagnosis: input.diagnosis,
+          therapy: input.therapy,
+          other_info: input.otherInfo,
+          include_visit_uuids: input.includeVisitUuids ?? [],
+        },
+      })
+      const mapped = dtoToAnamnesis(dto)
+      // Optimistically prepend to cache
+      setAnamneses((prev) => {
+        const existing = prev[patientUuid] ?? []
+        return { ...prev, [patientUuid]: [mapped, ...existing] }
+      })
+      return mapped
+    } catch (err) {
+      console.error(err)
+      setError('Spremanje anamneze nije uspjelo.')
+      return null
+    }
+  }
+
+  const deleteAnamnesis = async (patientUuid: string, uuid: string) => {
+    if (!user?.token) return
+    try {
+      await apiRequest<null>(`/patients/${patientUuid}/anamneses/${uuid}`, {
+        method: 'DELETE',
+        token: user.token,
+      })
+      setAnamneses((prev) => ({
+        ...prev,
+        [patientUuid]: (prev[patientUuid] ?? []).filter((a) => a.uuid !== uuid),
+      }))
+    } catch (err) {
+      console.error(err)
+      setError('Brisanje anamneze nije uspjelo.')
+    }
+  }
+
+  const updateAnamnesis = async (
+    patientUuid: string,
+    uuid: string,
+    payload: UpdateAnamnesisPayload,
+  ): Promise<Anamnesis | null> => {
+    if (!user?.token) return null
+    try {
+      const dto = await apiRequest<AnamnesisDto>(`/patients/${patientUuid}/anamneses/${uuid}`, {
+        method: 'PATCH',
+        token: user.token,
+        body: payload,
+      })
+      const mapped = dtoToAnamnesis(dto)
+      setAnamneses((prev) => ({
+        ...prev,
+        [patientUuid]: (prev[patientUuid] ?? []).map((a) => (a.uuid === uuid ? mapped : a)),
+      }))
+      return mapped
+    } catch (err) {
+      console.error(err)
+      setError('Ažuriranje anamneze nije uspjelo.')
+      return null
+    }
+  }
+
+  const value = useMemo<PatientsContextValue>(() => {
+    return {
       patients,
       anamneses,
       loading,
@@ -197,10 +299,26 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       createPatient,
       updatePatient,
       deletePatient,
-      addAnamnesis,
-    }),
-    [patients, anamneses, loading, error, searchTerm],
-  )
+      fetchAnamneses,
+      createAnamnesis,
+      deleteAnamnesis,
+      updateAnamnesis,
+    }
+  }, [
+    patients,
+    anamneses,
+    loading,
+    error,
+    searchTerm,
+    refresh,
+    createPatient,
+    updatePatient,
+    deletePatient,
+    fetchAnamneses,
+    createAnamnesis,
+    deleteAnamnesis,
+    updateAnamnesis,
+  ])
 
   return <PatientsContext.Provider value={value}>{children}</PatientsContext.Provider>
 }

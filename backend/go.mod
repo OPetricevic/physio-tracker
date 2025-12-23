@@ -4,7 +4,6 @@ go 1.24.11
 
 require (
 	github.com/OPetricevic/physio-tracker/backend/golang v0.0.0-00010101000000-000000000000
-	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgconn v1.14.3
@@ -16,6 +15,7 @@ require (
 
 require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0 // indirect
 	github.com/infobloxopen/atlas-app-toolkit/v2 v2.2.2 // indirect

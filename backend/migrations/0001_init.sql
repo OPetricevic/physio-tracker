@@ -40,8 +40,13 @@ CREATE INDEX IF NOT EXISTS idx_patients_name ON patients(LOWER(first_name), LOWE
 CREATE TABLE IF NOT EXISTS anamneses (
     uuid VARCHAR(255) PRIMARY KEY,
     patient_uuid VARCHAR(255) NOT NULL REFERENCES patients(uuid) ON DELETE CASCADE,
-    note TEXT NOT NULL, -- long text allowed
-    created_at TIMESTAMP NOT NULL
+    anamnesis TEXT NOT NULL,
+    diagnosis TEXT NOT NULL,
+    therapy TEXT NOT NULL,
+    other_info TEXT NOT NULL,
+    include_visit_uuids TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NULL DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_anamneses_patient ON anamneses(patient_uuid, created_at DESC);

@@ -7,12 +7,25 @@ import type { Patient } from '../types'
 import '../App.css'
 
 export function WorkspacePage() {
-  const { patients, anamneses, createPatient, addAnamnesis, searchTerm, setSearchTerm, loading, error } = usePatients()
+  const {
+    patients,
+    createPatient,
+    fetchAnamneses,
+    createAnamnesis,
+    deleteAnamnesis,
+    updateAnamnesis,
+    searchTerm,
+    setSearchTerm,
+    loading,
+    error,
+  } = usePatients()
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
-  const [selectedVisits, setSelectedVisits] = useState<Set<string>>(new Set())
+  const [anamneses, setAnamneses] = useState([])
+  const [anaPage, setAnaPage] = useState(1)
+  const [anaHasNext, setAnaHasNext] = useState(false)
+  const [anaQuery, setAnaQuery] = useState('')
   const pageSize = 5
 
   const filteredPatients = useMemo(() => {
@@ -30,20 +43,24 @@ export function WorkspacePage() {
   )
 
   const selectedPatient = patients.find((p) => p.uuid === selectedUuid) ?? null
-  const selectedAnamneses = (selectedUuid && anamneses[selectedUuid]) || []
-  useEffect(() => {
-    setPage(1)
-  }, [selectedUuid, selectedAnamneses.length])
 
-  const sortedAnamneses = useMemo(() => {
-    let list = [...selectedAnamneses].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-    return list
-  }, [selectedAnamneses])
-  const totalPages = Math.max(1, Math.ceil(sortedAnamneses.length / pageSize))
-  const currentPage = Math.min(page, totalPages)
-  const pagedAnamneses = sortedAnamneses.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const loadAnamneses = async (patientUuid: string, query: string, pageNum: number) => {
+    const { items, hasNext } = await fetchAnamneses(patientUuid, { query, page: pageNum, pageSize })
+    setAnamneses(items)
+    setAnaHasNext(hasNext)
+    setAnaPage(pageNum)
+  }
+
+  useEffect(() => {
+    if (selectedUuid) {
+      void loadAnamneses(selectedUuid, anaQuery, 1)
+    } else {
+      setAnamneses([])
+      setAnaHasNext(false)
+      setAnaPage(1)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUuid])
 
   const handleCreatePatient = async (input: { firstName: string; lastName: string; phone?: string; address?: string; dateOfBirth?: string; sex?: string }) => {
     const next = await createPatient(input)
@@ -55,14 +72,20 @@ export function WorkspacePage() {
 
   const handleAddAnamnesis = (input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string }) => {
     if (!selectedPatient) return
-    addAnamnesis(selectedPatient.uuid, input)
-    setPage(1)
+    void (async () => {
+      await createAnamnesis(selectedPatient.uuid, {
+        note: input.note,
+        diagnosis: input.diagnosis || '',
+        therapy: input.therapy || '',
+        otherInfo: input.otherInfo || '',
+      })
+      await loadAnamneses(selectedPatient.uuid, anaQuery, 1)
+    })()
   }
 
   const handleSelectPatient = (uuid: string) => {
     setSelectedUuid(uuid)
     setRecent((prev) => [uuid, ...prev.filter((id) => id !== uuid)].slice(0, 5))
-    setSelectedVisits(new Set())
   }
 
   const handleGeneratePdf = (anamnesisUuid: string) => {
@@ -73,18 +96,10 @@ export function WorkspacePage() {
     alert(`Pokrenula bi se sigurnosna kopija za pacijenta ${selectedPatient?.uuid ?? ''}`)
   }
 
-  const handleToggleVisit = (visitUuid: string) => {
-    setSelectedVisits((prev) => {
-      const next = new Set(prev)
-      if (next.has(visitUuid)) next.delete(visitUuid)
-      else next.add(visitUuid)
-      return next
-    })
-  }
-
-  const handleBulkPdf = () => {
-    if (!selectedPatient || selectedVisits.size === 0) return
-    alert(`Generirao bi se PDF za posjete: ${Array.from(selectedVisits).join(', ')}`)
+  const handleUpdateIncludes = async (anamnesisUuid: string, includes: string[]) => {
+    if (!selectedPatient) return
+    await updateAnamnesis(selectedPatient.uuid, anamnesisUuid, { include_visit_uuids: includes })
+    await loadAnamneses(selectedPatient.uuid, anaQuery, anaPage)
   }
 
   return (
@@ -122,17 +137,30 @@ export function WorkspacePage() {
           {selectedPatient ? (
             <AnamnesisPanel
               patientName={`${selectedPatient.firstName} ${selectedPatient.lastName}`}
-              anamneses={pagedAnamneses}
-              page={currentPage}
-              totalPages={totalPages}
-              onPageChange={setPage}
+              anamneses={anamneses}
+              searchTerm={anaQuery}
+              onSearchChange={(term) => {
+                setAnaQuery(term)
+                if (selectedPatient) void loadAnamneses(selectedPatient.uuid, term, 1)
+              }}
+              page={anaPage}
+              hasNext={anaHasNext}
+              onPageChange={(next) => {
+                if (!selectedPatient) return
+                void loadAnamneses(selectedPatient.uuid, anaQuery, next)
+              }}
               disabled={!selectedPatient}
               onAdd={handleAddAnamnesis}
+              onDelete={(uuid) => {
+                if (!selectedPatient) return
+                void (async () => {
+                  await deleteAnamnesis(selectedPatient.uuid, uuid)
+                  await loadAnamneses(selectedPatient.uuid, anaQuery, 1)
+                })()
+              }}
+              onUpdateIncludes={handleUpdateIncludes}
               onGeneratePdf={handleGeneratePdf}
               onBackup={handleBackup}
-              selectedVisits={selectedVisits}
-              onToggleVisit={handleToggleVisit}
-              onBulkPdf={handleBulkPdf}
             />
           ) : (
             <div className="panel empty">

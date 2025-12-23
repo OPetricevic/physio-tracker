@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from 'react'
 import { apiRequest } from './api/client'
-import type { AuthLoginResponse } from './api/dto'
 
 type AuthUser = {
   email: string
@@ -33,18 +33,16 @@ type LoginResponse = {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
-
-  useEffect(() => {
+  const [user, setUser] = useState<AuthUser | null>(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored))
-      } catch {
-        window.localStorage.removeItem(STORAGE_KEY)
-      }
+    if (!stored) return null
+    try {
+      return JSON.parse(stored)
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY)
+      return null
     }
-  }, [])
+  })
 
   const setAndStore = (next: AuthUser | null) => {
     setUser(next)
@@ -55,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const login = async (identifier: string, password: string) => {
+  const login = useCallback(async (identifier: string, password: string) => {
     const res = await apiRequest<LoginResponse>('/auth/login', {
       method: 'POST',
       body: { identifier, password },
@@ -66,9 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: res.token,
       expiresAt: res.expires_at,
     })
-  }
+  }, [])
 
-  const register = async (payload: {
+  const register = useCallback(async (payload: {
     email: string
     username: string
     firstName: string
@@ -91,17 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: res.token,
       expiresAt: res.expires_at,
     })
-  }
+  }, [])
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      login,
-      register,
-      logout: () => setAndStore(null),
-    }),
-    [user],
-  )
+  const value = useMemo<AuthContextValue>(() => {
+    const logout = () => setAndStore(null)
+    return { user, login, register, logout }
+  }, [user, login, register])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
