@@ -43,13 +43,33 @@ CREATE TABLE IF NOT EXISTS anamneses (
     anamnesis TEXT NOT NULL,
     diagnosis TEXT NOT NULL,
     therapy TEXT NOT NULL,
-    other_info TEXT NOT NULL,
+    other_info TEXT NULL,
     include_visit_uuids TEXT[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NULL DEFAULT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_anamneses_patient ON anamneses(patient_uuid, created_at DESC);
+
+-- Doctor profile / branding for PDFs
+CREATE TABLE IF NOT EXISTS doctor_profiles (
+    uuid VARCHAR(255) PRIMARY KEY,
+    doctor_uuid VARCHAR(255) NOT NULL UNIQUE REFERENCES doctors(uuid) ON DELETE CASCADE,
+    practice_name VARCHAR(255) NOT NULL,
+    department VARCHAR(255),
+    role_title VARCHAR(255),
+    address VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    email VARCHAR(255),
+    website VARCHAR(255),
+    logo_path VARCHAR(255),
+    signature_path VARCHAR(255),
+    protocol_prefix VARCHAR(50),
+    header_note TEXT,
+    footer_note TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NULL DEFAULT NULL
+);
 
 -- Auth tokens (e.g., refresh tokens or session tokens)
 CREATE TABLE IF NOT EXISTS auth_tokens (

@@ -430,6 +430,13 @@ textarea:focus {
   margin-bottom: 8px;
 }
 
+/* Ghosted prefilled inputs */
+input.ghost,
+textarea.ghost {
+  color: #718096;
+}
+
+
 @media (max-width: 780px) {
   .table-head {
     display: none;

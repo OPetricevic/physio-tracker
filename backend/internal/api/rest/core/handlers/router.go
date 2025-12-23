@@ -38,6 +38,10 @@ func BuildRouter(db *gorm.DB) *mux.Router {
 	authHandler := authh.NewHandler(authController)
 	authHandler.RegisterRoutes(r)
 
+	// Serve uploaded branding assets
+	staticDir := http.Dir("uploads")
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(staticDir)))
+
 	// Protected routes: everything else goes under a subrouter with auth middleware.
 	protected := r.PathPrefix("/").Subrouter()
 	protected.Use(mwauth.AuthMiddleware(tokenRepo))

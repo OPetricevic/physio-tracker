@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package patients.v1;
+
+import "google/protobuf/timestamp.proto";
+import "gorm/gorm.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/OPetricevic/physio-tracker/backend/golang/patients;patients";
+
+// DoctorProfile contains branding/contact data used for PDF headers.
+message DoctorProfile {
+  option (gorm.opts).ormable = true;
+  option (gorm.opts).table = "doctor_profiles";
+
+  string uuid = 1;
+  string doctor_uuid = 2 [(validate.rules).string = {uuid: true, min_bytes: 1}];
+
+  string practice_name = 3 [(validate.rules).string = {min_bytes: 1}];
+  string department = 4;
+  string role_title = 5;
+  string address = 6 [(validate.rules).string = {min_bytes: 1}];
+  string phone = 7 [(validate.rules).string = {min_bytes: 1}];
+  string email = 8;
+  string website = 9;
+  string logo_path = 10;
+  string signature_path = 11;
+  string protocol_prefix = 12;
+  string header_note = 13;
+  string footer_note = 14;
+
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
+message UpsertDoctorProfileRequest {
+  DoctorProfile profile = 1 [(validate.rules).message.required = true];
+}
+
+message GetDoctorProfileResponse {
+  DoctorProfile profile = 1;
+}

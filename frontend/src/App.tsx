@@ -7,6 +7,7 @@ import { RegisterPage } from './pages/Register'
 import { WorkspacePage } from './pages/Workspace'
 import { SchedulePage } from './pages/Schedule'
 import { ManagePatientsPage } from './pages/ManagePatients'
+import { ProfilePage } from './pages/Profile'
 
 function Protected({ children }: { children: ReactElement }) {
   const { user } = useAuth()
@@ -36,6 +37,9 @@ function AppShell() {
           </NavLink>
           <NavLink to="/app/raspored" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
             Raspored
+          </NavLink>
+          <NavLink to="/app/profil" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
+            Profil
           </NavLink>
         </nav>
         <div className="nav-actions">
@@ -71,6 +75,7 @@ function App() {
               <Route path="pacijenti" element={<WorkspacePage />} />
               <Route path="upravljanje" element={<ManagePatientsPage />} />
               <Route path="raspored" element={<SchedulePage />} />
+              <Route path="profil" element={<ProfilePage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
