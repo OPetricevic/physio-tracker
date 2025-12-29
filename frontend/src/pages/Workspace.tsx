@@ -14,6 +14,7 @@ export function WorkspacePage() {
     createAnamnesis,
     deleteAnamnesis,
     updateAnamnesis,
+    generateAnamnesisPdf,
     searchTerm,
     setSearchTerm,
     loading,
@@ -88,8 +89,16 @@ export function WorkspacePage() {
     setRecent((prev) => [uuid, ...prev.filter((id) => id !== uuid)].slice(0, 5))
   }
 
-  const handleGeneratePdf = (anamnesisUuid: string) => {
-    alert(`Generirao bi se PDF za anamnezu ${anamnesisUuid}`)
+  const handleGeneratePdf = async (anamnesisUuid: string) => {
+    if (!selectedPatient) return
+    const blob = await generateAnamnesisPdf(selectedPatient.uuid, anamnesisUuid)
+    if (!blob) return
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'anamneza.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleBackup = () => {

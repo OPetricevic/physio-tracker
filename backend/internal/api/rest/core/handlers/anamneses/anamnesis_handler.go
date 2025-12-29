@@ -21,4 +21,5 @@ func (h *Handler) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/patients/{patient_uuid}/anamneses", h.controller.Create).Methods(http.MethodPost)
 	r.HandleFunc("/patients/{patient_uuid}/anamneses/{uuid}", h.controller.Update).Methods(http.MethodPatch)
 	r.HandleFunc("/patients/{patient_uuid}/anamneses/{uuid}", h.controller.Delete).Methods(http.MethodDelete)
+	r.HandleFunc("/patients/{patient_uuid}/anamneses/{uuid}/pdf", h.controller.GeneratePDF).Methods(http.MethodPost)
 }

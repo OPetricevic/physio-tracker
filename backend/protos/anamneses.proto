@@ -38,10 +38,10 @@ message CreateAnamnesisRequest {
 message UpdateAnamnesisRequest {
   string uuid = 1 [(validate.rules).string = {uuid: true, min_bytes: 1}];
   string patient_uuid = 2 [(validate.rules).string = {uuid: true, min_bytes: 1}];
-  string anamnesis = 3 [(validate.rules).string = {min_bytes: 1}];
-  string diagnosis = 4 [(validate.rules).string = {min_bytes: 1}];
-  string therapy = 5 [(validate.rules).string = {min_bytes: 1}];
-  string other_info = 6;
+  string anamnesis = 3; // optional for PATCH
+  string diagnosis = 4; // optional for PATCH
+  string therapy = 5;   // optional for PATCH
+  string other_info = 6; // optional for PATCH
   repeated string include_visit_uuids = 7;
 }
 

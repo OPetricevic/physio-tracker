@@ -14,6 +14,8 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
+	"os"
+	"path/filepath"
 )
 
 type Service interface {
@@ -83,9 +85,18 @@ func (s *service) Upsert(ctx context.Context, doctorUUID string, req *pt.UpsertD
 	p.FooterNote = trim(p.GetFooterNote())
 	p.UpdatedAt = now
 
-	// Preserve existing logo if caller sends empty.
-	if existing, err := s.repo.GetByDoctor(ctx, doctorUUID); err == nil && p.GetLogoPath() == "" {
-		p.LogoPath = existing.GetLogoPath()
+	var existing *pt.DoctorProfile
+	if ex, err := s.repo.GetByDoctor(ctx, doctorUUID); err == nil {
+		existing = ex
+	}
+
+	// Preserve existing logo if caller sends empty; delete old file if replaced.
+	if existing != nil {
+		if p.GetLogoPath() == "" {
+			p.LogoPath = existing.GetLogoPath()
+		} else if existing.GetLogoPath() != "" && existing.GetLogoPath() != p.GetLogoPath() {
+			_ = deleteLocalStatic(existing.GetLogoPath())
+		}
 	}
 
 	saved, err := s.repo.Upsert(ctx, p)
@@ -96,3 +107,19 @@ func (s *service) Upsert(ctx context.Context, doctorUUID string, req *pt.UpsertD
 }
 
 var _ Service = (*service)(nil)
+
+func deleteLocalStatic(path string) error {
+	if path == "" {
+		return nil
+	}
+	const prefix = "/static/"
+	if !strings.HasPrefix(path, prefix) {
+		return nil
+	}
+	rel := strings.TrimPrefix(path, prefix)
+	local := filepath.Join("uploads", rel)
+	if _, err := os.Stat(local); err == nil {
+		return os.Remove(local)
+	}
+	return nil
+}

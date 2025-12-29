@@ -41,6 +41,7 @@ type PatientsContextValue = {
     uuid: string,
     payload: UpdateAnamnesisPayload,
   ) => Promise<Anamnesis | null>
+  generateAnamnesisPdf: (patientUuid: string, anamnesisUuid: string) => Promise<Blob | null>
 }
 
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined)
@@ -287,6 +288,20 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const generateAnamnesisPdf = async (patientUuid: string, anamnesisUuid: string): Promise<Blob | null> => {
+    if (!user?.token) return null
+    const res = await fetch(`/api/patients/${patientUuid}/anamneses/${anamnesisUuid}/pdf`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    })
+    if (!res.ok) {
+      return null
+    }
+    return await res.blob()
+  }
+
   const value = useMemo<PatientsContextValue>(() => {
     return {
       patients,
@@ -303,6 +318,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       createAnamnesis,
       deleteAnamnesis,
       updateAnamnesis,
+      generateAnamnesisPdf,
     }
   }, [
     patients,
@@ -318,6 +334,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     createAnamnesis,
     deleteAnamnesis,
     updateAnamnesis,
+    generateAnamnesisPdf,
   ])
 
   return <PatientsContext.Provider value={value}>{children}</PatientsContext.Provider>

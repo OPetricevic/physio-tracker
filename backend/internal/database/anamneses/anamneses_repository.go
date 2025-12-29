@@ -109,4 +109,23 @@ func (r *Repository) List(ctx context.Context, patientUUID string, doctorUUID st
 	return res, nil
 }
 
+func (r *Repository) ListByUUIDs(ctx context.Context, uuids []string) ([]*pb.Anamnesis, error) {
+	if len(uuids) == 0 {
+		return []*pb.Anamnesis{}, nil
+	}
+	var orms []pb.AnamnesisORM
+	if err := r.db.WithContext(ctx).Where("uuid IN ?", uuids).Find(&orms).Error; err != nil {
+		return nil, fmt.Errorf("listing anamneses by uuids: %w", err)
+	}
+	res := make([]*pb.Anamnesis, 0, len(orms))
+	for _, orm := range orms {
+		pbObj, err := orm.ToPB(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("listing anamneses by uuids: convert to PB: %w", err)
+		}
+		res = append(res, &pbObj)
+	}
+	return res, nil
+}
+
 var _ out.Repository = (*Repository)(nil)

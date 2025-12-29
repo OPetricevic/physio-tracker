@@ -141,6 +141,42 @@ func (c *Controller) List(w http.ResponseWriter, r *http.Request) {
 	common.WriteProto(w, resp, http.StatusOK)
 }
 
+// GeneratePDF builds a PDF for a specific anamnesis.
+func (c *Controller) GeneratePDF(w http.ResponseWriter, r *http.Request) {
+	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	vars := mux.Vars(r)
+	patientUUID := vars["patient_uuid"]
+	anamnesisUUID := vars["uuid"]
+
+	var req pb.GenerateAnamnesisPdfRequest
+	body, _ := io.ReadAll(r.Body)
+	if len(body) > 0 {
+		_ = common.JSONPB.Unmarshal(body, &req)
+	}
+
+	bytes, err := c.svc.GeneratePDF(r.Context(), doctorUUID, patientUUID, anamnesisUUID, req.IncludeVisitUuids)
+	if err != nil {
+		switch {
+		case isSvcErr(err, se.ErrInvalidRequest):
+			common.WriteJSONError(w, "invalid_request", err.Error(), http.StatusBadRequest)
+		case isSvcErr(err, se.ErrNotFound):
+			common.WriteJSONError(w, "not_found", err.Error(), http.StatusNotFound)
+		default:
+			common.WriteJSONError(w, "internal_error", err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"anamnesis.pdf\"")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(bytes)
+}
+
 func (c *Controller) Delete(w http.ResponseWriter, r *http.Request) {
 	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
 	if !ok {

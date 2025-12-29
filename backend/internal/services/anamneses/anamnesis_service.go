@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/jung-kurt/gofpdf"
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	out "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/anamneses"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
@@ -15,6 +17,8 @@ import (
 	"github.com/jackc/pgconn"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
+	"os"
+	"path/filepath"
 )
 
 type Service interface {
@@ -23,14 +27,25 @@ type Service interface {
 	List(ctx context.Context, doctorUUID, patientUUID, query string, pageSize, currentPage int) ([]*pb.Anamnesis, error)
 	Delete(ctx context.Context, doctorUUID, uuid string) error
 	Get(ctx context.Context, doctorUUID, uuid string) (*pb.Anamnesis, error)
+	GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anamnesisUUID string, include []string) ([]byte, error)
 }
 
 type service struct {
-	repo out.Repository
+	repo        out.Repository
+	patientRepo patientsRepo
+	profileRepo profileRepo
 }
 
-func NewService(repo out.Repository) Service {
-	return &service{repo: repo}
+type patientsRepo interface {
+	Get(ctx context.Context, uuid string) (*pb.Patient, error)
+}
+
+type profileRepo interface {
+	GetByDoctor(ctx context.Context, doctorUUID string) (*pb.DoctorProfile, error)
+}
+
+func NewService(repo out.Repository, pRepo patientsRepo, profRepo profileRepo) Service {
+	return &service{repo: repo, patientRepo: pRepo, profileRepo: profRepo}
 }
 
 func (s *service) Create(ctx context.Context, doctorUUID string, req *pb.CreateAnamnesisRequest) (*pb.Anamnesis, error) {
@@ -157,4 +172,211 @@ func isUniqueViolation(err error) bool {
 		return pgErr.Code == "23505"
 	}
 	return false
+}
+
+func (s *service) GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anamnesisUUID string, include []string) ([]byte, error) {
+	if strings.TrimSpace(doctorUUID) == "" || strings.TrimSpace(patientUUID) == "" || strings.TrimSpace(anamnesisUUID) == "" {
+		return nil, fmt.Errorf("generate pdf: %w", se.ErrInvalidRequest)
+	}
+
+	patient, err := s.patientRepo.Get(ctx, patientUUID)
+	if err != nil {
+		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("generate pdf: %w", se.ErrNotFound)
+		}
+		return nil, fmt.Errorf("generate pdf: load patient: %w", err)
+	}
+	if strings.TrimSpace(patient.GetDoctorUuid()) != strings.TrimSpace(doctorUUID) {
+		return nil, fmt.Errorf("generate pdf: %w", se.ErrInvalidRequest)
+	}
+
+	target, err := s.repo.Get(ctx, anamnesisUUID)
+	if err != nil {
+		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("generate pdf: %w", se.ErrNotFound)
+		}
+		return nil, fmt.Errorf("generate pdf: load anamnesis: %w", err)
+	}
+	if strings.TrimSpace(target.GetPatientUuid()) != strings.TrimSpace(patientUUID) {
+		return nil, fmt.Errorf("generate pdf: %w", se.ErrInvalidRequest)
+	}
+
+	includeList := include
+	if len(includeList) == 0 && len(target.IncludeVisitUuids) > 0 {
+		includeList = target.IncludeVisitUuids
+	}
+	var prior []*pb.Anamnesis
+	if len(includeList) > 0 {
+		list, err := s.repo.ListByUUIDs(ctx, includeList)
+		if err != nil {
+			return nil, fmt.Errorf("generate pdf: load included visits: %w", err)
+		}
+		for _, v := range list {
+			if strings.TrimSpace(v.GetPatientUuid()) == strings.TrimSpace(patientUUID) {
+				prior = append(prior, v)
+			}
+		}
+		sort.Slice(prior, func(i, j int) bool {
+			return prior[i].GetCreatedAt().AsTime().After(prior[j].GetCreatedAt().AsTime())
+		})
+	}
+
+	profile, _ := s.profileRepo.GetByDoctor(ctx, doctorUUID) // optional
+
+	return buildPDF(profile, patient, target, prior)
+}
+
+func buildPDF(profile *pb.DoctorProfile, patient *pb.Patient, current *pb.Anamnesis, prior []*pb.Anamnesis) ([]byte, error) {
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetMargins(15, 15, 15)
+	pdf.AddPage()
+	printedOn := time.Now().Format("02.01.2006.")
+	tr := pdf.UnicodeTranslatorFromDescriptor("cp1250")
+	if tr == nil {
+		tr = func(s string) string { return s }
+	}
+
+	// Header
+	if profile != nil && profile.GetLogoPath() != "" {
+		if local := localFromStatic(profile.GetLogoPath()); local != "" {
+			pdf.ImageOptions(local, 15, 15, 30, 0, false, gofpdf.ImageOptions{ImageType: "", ReadDpi: true}, 0, "")
+		}
+	}
+	// printed date top-right
+	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetXY(-70, 15)
+	pdf.Cell(55, 5, tr("Datum ispisa: "+printedOn))
+
+	pdf.SetFont("Helvetica", "B", 14)
+	if profile != nil {
+		pdf.SetXY(50, 20)
+		pdf.Cell(0, 6, tr(profile.GetPracticeName()))
+		pdf.Ln(6)
+		pdf.SetFont("Helvetica", "", 10)
+		pdf.SetX(50)
+		pdf.Cell(0, 5, tr(strings.TrimSpace(profile.GetRoleTitle()+" "+profile.GetDepartment())))
+		pdf.Ln(5)
+		pdf.SetX(50)
+		pdf.Cell(0, 5, tr(profile.GetAddress()))
+		pdf.Ln(5)
+		pdf.SetX(50)
+		pdf.Cell(0, 5, tr(strings.TrimSpace(profile.GetPhone()+" "+profile.GetEmail())))
+		pdf.Ln(5)
+		if strings.TrimSpace(profile.GetWebsite()) != "" {
+			pdf.SetX(50)
+			pdf.Cell(0, 5, tr(strings.TrimSpace(profile.GetWebsite())))
+			pdf.Ln(5)
+		}
+		pdf.Ln(4)
+	}
+
+	pdf.SetFont("Helvetica", "B", 12)
+	pdf.Cell(0, 6, tr("Nalaz / Anamneza"))
+	pdf.Ln(10)
+
+	pdf.SetFont("Helvetica", "", 10)
+	pdf.Cell(40, 5, tr("Pacijent:"))
+	pdf.Cell(0, 5, tr(strings.TrimSpace(patient.GetFirstName()+" "+patient.GetLastName())))
+	pdf.Ln(5)
+	if dob := patient.GetDateOfBirth(); dob != nil && strings.TrimSpace(dob.GetValue()) != "" {
+		pdf.Cell(40, 5, tr("Datum rođenja:"))
+		pdf.Cell(0, 5, tr(formatPlainDate(dob.GetValue())))
+		pdf.Ln(5)
+	}
+	if patient.GetPhone() != nil {
+		pdf.Cell(40, 5, tr("Telefon:"))
+		pdf.Cell(0, 5, tr(patient.GetPhone().GetValue()))
+		pdf.Ln(5)
+	}
+	if patient.GetAddress() != nil {
+		pdf.Cell(40, 5, tr("Adresa:"))
+		pdf.Cell(0, 5, tr(patient.GetAddress().GetValue()))
+		pdf.Ln(8)
+	}
+
+	pdf.SetFont("Helvetica", "B", 11)
+	pdf.Cell(0, 6, tr(fmt.Sprintf("Posjet: %s", formatDate(current.GetCreatedAt()))))
+	pdf.Ln(7)
+	pdf.SetFont("Helvetica", "", 10)
+	pdf.MultiCell(0, 5, tr("Dijagnoza: "+current.GetDiagnosis()), "", "", false)
+	pdf.Ln(2)
+	pdf.MultiCell(0, 5, tr("Terapija: "+current.GetTherapy()), "", "", false)
+	pdf.Ln(2)
+	if strings.TrimSpace(current.GetAnamnesis()) != "" {
+		pdf.MultiCell(0, 5, tr("Anamneza: "+current.GetAnamnesis()), "", "", false)
+		pdf.Ln(2)
+	}
+	if strings.TrimSpace(current.GetOtherInfo()) != "" {
+		pdf.MultiCell(0, 5, tr("Ostalo: "+current.GetOtherInfo()), "", "", false)
+		pdf.Ln(2)
+	}
+	pdf.Ln(5)
+
+	if len(prior) > 0 {
+		pdf.SetFont("Helvetica", "B", 11)
+		pdf.Cell(0, 6, tr("Prethodni posjeti"))
+		pdf.Ln(7)
+		pdf.SetFont("Helvetica", "", 10)
+		for _, v := range prior {
+			pdf.MultiCell(0, 5, tr(fmt.Sprintf("Datum: %s", formatDate(v.GetCreatedAt()))), "", "", false)
+			pdf.MultiCell(0, 5, tr("Dijagnoza: "+v.GetDiagnosis()), "", "", false)
+			if strings.TrimSpace(v.GetTherapy()) != "" {
+				pdf.MultiCell(0, 5, tr("Terapija: "+v.GetTherapy()), "", "", false)
+			}
+			if strings.TrimSpace(v.GetAnamnesis()) != "" {
+				pdf.MultiCell(0, 5, tr("Anamneza: "+v.GetAnamnesis()), "", "", false)
+			}
+			if strings.TrimSpace(v.GetOtherInfo()) != "" {
+				pdf.MultiCell(0, 5, tr("Ostalo: "+v.GetOtherInfo()), "", "", false)
+			}
+			pdf.Ln(3)
+		}
+	}
+
+	if profile != nil && strings.TrimSpace(profile.GetFooterNote()) != "" {
+		pdf.SetY(-30)
+		pdf.SetFont("Helvetica", "I", 9)
+		pdf.MultiCell(0, 5, tr(profile.GetFooterNote()), "", "C", false)
+	}
+
+	var buf strings.Builder
+	if err := pdf.Output(&buf); err != nil {
+		return nil, fmt.Errorf("generate pdf: render: %w", err)
+	}
+	return []byte(buf.String()), nil
+}
+
+func formatDate(ts *timestamppb.Timestamp) string {
+	if ts == nil {
+		return ""
+	}
+	t := ts.AsTime()
+	return t.Format("02.01.2006.")
+}
+
+func formatPlainDate(val string) string {
+	s := strings.TrimSpace(val)
+	if s == "" {
+		return ""
+	}
+	layouts := []string{"2006-01-02", time.RFC3339}
+	for _, l := range layouts {
+		if t, err := time.Parse(l, s); err == nil {
+			return t.Format("02.01.2006.")
+		}
+	}
+	return s
+}
+
+func localFromStatic(path string) string {
+	const prefix = "/static/"
+	if !strings.HasPrefix(path, prefix) {
+		return ""
+	}
+	rel := strings.TrimPrefix(path, prefix)
+	local := filepath.Join("uploads", rel)
+	if _, err := os.Stat(local); err == nil {
+		return local
+	}
+	return ""
 }

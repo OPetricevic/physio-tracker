@@ -75,7 +75,9 @@ type anamnesisModule struct {
 
 func NewAnamnesisModule(db *gorm.DB) Module {
 	repo := dbanamneses.NewRepository(db)
-	svc := svcanamneses.NewService(repo)
+	pRepo := dbpatients.NewPatientsRepository(db)
+	profRepo := dbdoctorprofiles.NewRepository(db)
+	svc := svcanamneses.NewService(repo, pRepo, profRepo)
 	ctrl := canamneses.NewController(svc)
 	return &anamnesisModule{handler: anamneses.NewHandler(ctrl)}
 }

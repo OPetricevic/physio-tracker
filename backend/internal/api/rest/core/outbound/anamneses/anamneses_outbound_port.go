@@ -13,4 +13,5 @@ type Repository interface {
 	Get(ctx context.Context, uuid string) (*pb.Anamnesis, error)
 	Delete(ctx context.Context, uuid string) error
 	List(ctx context.Context, patientUUID string, doctorUUID string, query string, limit, offset int) ([]*pb.Anamnesis, error)
+	ListByUUIDs(ctx context.Context, uuids []string) ([]*pb.Anamnesis, error)
 }
