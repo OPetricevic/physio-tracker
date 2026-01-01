@@ -2,6 +2,7 @@ FRONTEND_DIR := frontend
 BACKEND_DIR := backend
 # default app creds (created by bootstrap script)
 DB_URL ?= postgres://physio:physio@localhost:5433/physio?sslmode=disable
+RELEASE_DIR := release/physio-bundle
 PROTO_DIR := $(BACKEND_DIR)/protos
 PROTO_OUT := $(BACKEND_DIR)/golang
 PROTO_OUT_PKG := $(PROTO_OUT)/github.com/OPetricevic/physio-tracker/backend/golang/patients
@@ -30,6 +31,10 @@ run: frontend-dev
 backend-run:
 	cd $(BACKEND_DIR) && DATABASE_URL=$(DB_URL) PORT=3600 go run ./cmd/server
 
+# Backend: build binary
+backend-build:
+	cd $(BACKEND_DIR) && DATABASE_URL=$(DB_URL) PORT=3600 go build -o ../$(RELEASE_DIR)/server ./cmd/server
+
 # Backend: apply SQL migrations in order using psql (requires DB to exist)
 backend-migrate:
 	cd $(BACKEND_DIR) && DATABASE_URL=$(DB_URL) ./scripts/migrate.sh
@@ -54,3 +59,22 @@ dev:
 
 # Alias: generate protos (Go + gorm)
 proto: backend-proto
+
+# Package: build frontend + backend + bundle helper scripts into release/physio-bundle
+package: clean-release frontend-build
+	@mkdir -p $(RELEASE_DIR)
+	# build backend binary into release dir
+	cd $(BACKEND_DIR) && DATABASE_URL=$(DB_URL) PORT=3600 go build -o ../$(RELEASE_DIR)/server ./cmd/server
+	# copy frontend build
+	mkdir -p $(RELEASE_DIR)/frontend
+	cp -r frontend/dist $(RELEASE_DIR)/frontend/
+	# copy assets (fonts), uploads placeholder, scripts
+	mkdir -p $(RELEASE_DIR)/assets/fonts
+	cp -r backend/assets/fonts/* $(RELEASE_DIR)/assets/fonts/
+	mkdir -p $(RELEASE_DIR)/uploads
+	cp scripts/start_linux.sh $(RELEASE_DIR)/
+	cp scripts/start_windows.ps1 $(RELEASE_DIR)/
+	@echo "Bundle created at $(RELEASE_DIR)"
+
+clean-release:
+	rm -rf release
