@@ -15,26 +15,26 @@ Prereqs: Go, Node, PostgreSQL.
 - Build frontend: `make frontend-build`
 - Run backend: `make backend-run` (set `DB_URL` if needed)
 - Migrate: `make backend-migrate` (DB must exist)
-- Package bundle: `make package` (creates `release/physio-bundle` with server, frontend, assets, migrations, start scripts)
+- Package bundle (Linux): `make package` → `release/physio-bundle`
+- Package Windows portable zip (from Ubuntu): `make package-win` → `release/physio-windows-portable.zip`
 
 ## Installation for end users
 
 ### Windows (installer)
-1) We ship an installer built from the bundle:
-   - Build bundle: `make package`
-   - Open `scripts/win/physio.iss` in Inno Setup and build the installer.
-2) Run the installer:
+1) Build bundle: `make package` (on dev machine).
+2) On Windows (with Inno Setup installed), open `scripts/win/physio.iss` and build the installer `.exe`.
+3) Run the installer:
    - Copies the app to `C:\Program Files\PhysioTracker`.
    - Installs/updates the “PhysioTracker” Windows service (runs backend, serves frontend).
    - Adds Start menu/Desktop shortcuts to `http://localhost:3600`.
-3) Backups/restore:
+4) Backups/restore:
    - `scripts/win/backup.ps1` (pg_dump)
    - `scripts/win/restore.ps1 -File path\to\backup.sql`
 
 ### Windows (portable/manual)
-- Use the bundle: `release/physio-bundle`
+- Download/produce `release/physio-windows-portable.zip` (`make package-win`), unzip.
 - Ensure Postgres is running; set `DATABASE_URL` if different.
-- Run `scripts/start_windows.ps1` (starts server on port 3600, serves frontend).
+- Run `start_windows.ps1` (starts server on port 3600, serves frontend), or run `scripts\win\service_install.ps1` to install as a service.
 
 ### Linux
 1) Build bundle: `make package`
