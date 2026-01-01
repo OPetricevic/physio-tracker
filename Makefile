@@ -72,6 +72,8 @@ package: clean-release frontend-build
 	mkdir -p $(RELEASE_DIR)/assets/fonts
 	cp -r backend/assets/fonts/* $(RELEASE_DIR)/assets/fonts/
 	mkdir -p $(RELEASE_DIR)/uploads
+	mkdir -p $(RELEASE_DIR)/migrations
+	cp backend/migrations/*.sql $(RELEASE_DIR)/migrations/
 	cp scripts/start_linux.sh $(RELEASE_DIR)/
 	cp scripts/start_windows.ps1 $(RELEASE_DIR)/
 	@echo "Bundle created at $(RELEASE_DIR)"
