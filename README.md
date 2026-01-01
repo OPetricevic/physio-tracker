@@ -1,106 +1,64 @@
-# Doctor App Project Plan
+# Physio Tracker (offline-first)
 
-Working notes to guide development of the offline-first doctor application (React frontend, Go backend, PostgreSQL). Update this file as the project evolves.
+An offline-first app for physiotherapists/doctors to manage patients, anamneses, and generate PDFs. Runs locally (no internet required) with a Go backend, React frontend, and PostgreSQL. Installers/scripts provided for Windows and Linux.
 
-## Overview
-- Goal: Offline desktop/local app for doctors to manage patients and anamneses, and generate PDFs of notes on demand.
-- Offline-first: All assets local; no CDN. Later web deployment should require minimal tweaks (keep HTTP APIs clean).
-- Users: Single doctor now; design for multi-doctor/login later (keep separation of concerns and add auth when needed).
+## Features
+- Patients CRUD, anamneses CRUD, PDF generation (Bosnian/Croatian diacritics supported).
+- Include previous visits in PDFs; “only this visit” option.
+- Doctor profile (logo, header, contact) stored locally.
+- Backups via scripts (pg_dump/psql).
 
-## Stack Choices
-- Backend: Go, REST style, `gorilla/mux` or `chi`, `pgx` driver. Migrations via `golang-migrate` (or similar). PDF generation via `gofpdf` (or `pdfcpu`).
-- DB: PostgreSQL (preferred for future parity); SQLite acceptable for quick prototyping but Postgres recommended.
-- Frontend: React + TypeScript (Vite). Data fetching via `@tanstack/react-query`, forms via `react-hook-form`. Styling: CSS modules or minimal local CSS (no external CDN).
-- Packaging: Optional Docker Compose later for Postgres; keep local binaries/scripts working without containers.
+## Quick Start (developers)
+Prereqs: Go, Node, PostgreSQL.
+- Install deps: `make frontend-install`
+- Run dev: `make dev` (backend + Vite dev proxy to `/api`)
+- Build frontend: `make frontend-build`
+- Run backend: `make backend-run` (set `DB_URL` if needed)
+- Migrate: `make backend-migrate` (DB must exist)
+- Package bundle: `make package` (creates `release/physio-bundle` with server, frontend, assets, migrations, start scripts)
 
-## Project Layout
-- `backend/`
-  - `cmd/server/main.go`
-  - `internal/`
-    - `patients/` (handlers, service, repo)
-    - `pdf/` (PDF generation utilities)
-    - `db/` (queries, migrations helper)
-  - `migrations/` (SQL up/down files)
-  - `Makefile` (run, test, migrate, format)
-- `frontend/`
-  - `src/`
-    - `components/` (forms, table, pdf buttons)
-    - `pages/` (Patients page, Anamneses page)
-    - `lib/api.ts` (API client)
-    - `types/`
-- `ops/`
-  - `docker-compose.yml` (optional Postgres for later)
-  - `backup/` (backup/restore scripts and dumps)
+## Installation for end users
 
-## Data Model (initial)
-- `patients`: `id` (uuid), `first_name`, `last_name`, `phone`, `created_at`, `updated_at`.
-- `anamneses`: `id`, `patient_id` (fk), `note` (text), `created_at`.
-- Indexing: names/phone for search. Allow multiple anamneses per patient to keep history.
+### Windows (installer)
+1) We ship an installer built from the bundle:
+   - Build bundle: `make package`
+   - Open `scripts/win/physio.iss` in Inno Setup and build the installer.
+2) Run the installer:
+   - Copies the app to `C:\Program Files\PhysioTracker`.
+   - Installs/updates the “PhysioTracker” Windows service (runs backend, serves frontend).
+   - Adds Start menu/Desktop shortcuts to `http://localhost:3600`.
+3) Backups/restore:
+   - `scripts/win/backup.ps1` (pg_dump)
+   - `scripts/win/restore.ps1 -File path\to\backup.sql`
 
-## API Sketch
-- `POST /patients` (create patient)
-- `GET /patients` (list/search)
-- `GET /patients/{id}` (fetch detail)
-- `POST /patients/{id}/anamneses` (add anamnesis)
-- `GET /patients/{id}/anamneses` (list anamneses)
-- `POST /patients/{id}/anamneses/{anamnesisId}/pdf` (generate/stream PDF of that note)
+### Windows (portable/manual)
+- Use the bundle: `release/physio-bundle`
+- Ensure Postgres is running; set `DATABASE_URL` if different.
+- Run `scripts/start_windows.ps1` (starts server on port 3600, serves frontend).
 
-## PDF Generation
-- Server-side Go using `gofpdf` (simple, offline). Return `application/pdf` stream.
-- Optionally store generated PDFs on disk (e.g., `storage/pdfs/{patientId}/{anamnesisId}.pdf`) for quick re-download; regenerate if missing.
+### Linux
+1) Build bundle: `make package`
+2) On target machine, run from the bundle folder:
+   - `scripts/linux/install.sh`
+   - Installs Postgres (if missing), creates DB/user (`physio`/`physio` by default), runs migrations.
+   - Copies app to `/opt/physio`, installs a systemd service (`physio`), and a desktop launcher to open `http://localhost:3600`.
+3) Backups/restore:
+   - `scripts/linux/backup.sh`
+   - `scripts/linux/restore.sh path/to/backup.sql`
 
-## Backup Strategy (offline-friendly)
-- Preferred: Daily rolling dump plus manual "Backup now" trigger.
-  - Postgres example: `pg_dump -Fc dbname > ops/backup/dumps/backup-YYYYMMDD-HHMM.dump`
-  - Optionally zip dump + small JSON manifest: `backup-YYYYMMDD-HHMM.zip` for USB transfer.
-- Endpoint and CLI script to trigger backup and download. Avoid heavy dump on every write; that is slow and brittle.
-- Restore script (e.g., `ops/backup/restore.sh`) to load dump.
+## Defaults / Config
+- HTTP port: `PORT` (default 3600)
+- DB URL: `DATABASE_URL` (default `postgres://physio:physio@localhost:5433/physio?sslmode=disable` in Makefile; installer uses `:5432` on Linux)
+- Frontend build served from `frontend/dist` (packaged into bundle)
+- Uploads/logos stored under `uploads/` (served at `/static`)
 
-## Frontend Notes
-- Pages: Patients list with search; form/drawer to add/edit; per-patient anamnesis list; per-entry PDF button.
-- State/data: `react-query` for caching/fetch; keep API base URL configurable (env).
-- UI: Local fonts/assets; no external calls. Keep layout simple and printable-friendly PDF view if needed.
+## Repo layout (relevant)
+- `backend/` Go server, migrations, fonts for PDFs
+- `frontend/` React/Vite app
+- `scripts/` start/installer/backup/restore (Windows & Linux)
+- `release/physio-bundle/` (created by `make package`)
 
-## Backend Notes
-- Config via env (DB URL, HTTP port, storage paths). Sensible defaults for local/dev.
-- Logging, basic validation, and simple error responses (JSON).
-- Migrations run on startup or via `make migrate`.
-
-## Initial Setup Commands (to run manually)
-- Backend scaffold:
-  - `cd backend`
-  - `go mod init doctorapp/backend`
-  - `go get github.com/gorilla/mux github.com/jackc/pgx/v5 github.com/golang-migrate/migrate/v4 github.com/jung-kurt/gofpdf`
-  - `mkdir -p cmd/server internal/{patients,pdf,db} migrations`
-- Frontend scaffold:
-  - `cd frontend`
-  - `npm create vite@latest frontend -- --template react-ts`
-  - `cd frontend`
-  - `npm install @tanstack/react-query react-hook-form`
-
-## Running locally (current)
-- From repo root, use the Makefile helpers:
-  - `make frontend-install` to install frontend deps.
-  - `make frontend-dev` (or `make run`) to start the React dev server.
-  - `make frontend-build` to build static assets.
-- Later, add backend targets (run server, migrations, tests) and wire a launcher/shortcut that starts both backend and frontend locally.
-
-## Frontend auth placeholder
-- Basic login/registration screens exist for future auth. They store a mock user in `localStorage` and gate the workspace routes. No real backend yet.
-- Flow: open app → `/login` or `/register` → upon submit you are routed to the patient workspace.
-
-## Feature notes / changes
-- Pacijenti/Anamneze view now paginates anamneses: 5 najnovijih po stranici, sortirano po datumu (DESC). Navigacija stranica je u panelu; backend treba vratiti sortirano po datumu kad se spoji.
-- Top navigacija dodana: Pacijenti (trenutna funkcionalnost) i Raspored (placeholder za Google Calendar integraciju).
-
-## Backend TODOs
-- See `docs/BACKEND_TODO.md` for planned backend scaffolding, run scripts, deployment helper, PDF/assets plan, and backups.
-- See `docs/ARCHITECTURE.md` for ports/adapters naming and folder conventions (inbound/outbound/service).
-- See `docs/CLIENT_NOTES.md` for the latest client-facing data/PDF requirements (fields, search, PDF behavior).
-
-## Next Steps (candidate tasks)
-1) Scaffold backend server, wiring routes and simple health check. Add sample migration for patients/anamneses.  
-2) Scaffold frontend (Vite React TS) with Patients page and forms hooked to mock API client.  
-3) Add PDF generation endpoint + storage.  
-4) Add backup scripts (`backup-now.sh`, `restore.sh`) and optional API trigger.  
-5) Add search and basic validations; prepare for auth later.
+## Notes
+- All data stays local. No internet calls.
+- Fonts: DejaVu included for proper čćđšž.
+- If you rebuild the app, rerun `make package` and rebuild the installer.
