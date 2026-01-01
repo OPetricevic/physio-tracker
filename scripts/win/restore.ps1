@@ -9,7 +9,7 @@ if (-not $File -or -not (Test-Path $File)) {
 }
 
 $db = $env:DATABASE_URL
-if (-not $db) { $db = "postgres://physio:physio@localhost:5433/physio?sslmode=disable" }
+if (-not $db) { $db = "postgres://physio:physio@localhost:5432/physio?sslmode=disable" }
 
 Write-Host "Restoring from $File"
 & psql $db < $File
