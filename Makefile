@@ -3,6 +3,7 @@ BACKEND_DIR := backend
 # default app creds (created by bootstrap script)
 DB_URL ?= postgres://physio:physio@localhost:5433/physio?sslmode=disable
 RELEASE_DIR := release/physio-bundle
+RELEASE_DIR_WIN := release/physio-bundle-win
 PROTO_DIR := $(BACKEND_DIR)/protos
 PROTO_OUT := $(BACKEND_DIR)/golang
 PROTO_OUT_PKG := $(PROTO_OUT)/github.com/OPetricevic/physio-tracker/backend/golang/patients
@@ -80,3 +81,24 @@ package: clean-release frontend-build
 
 clean-release:
 	rm -rf release
+
+# Cross-compile Windows portable bundle and zip it
+package-win: clean-release frontend-build
+	@mkdir -p $(RELEASE_DIR_WIN)
+	# cross-compile backend to Windows
+	cd $(BACKEND_DIR) && GOOS=windows GOARCH=amd64 DATABASE_URL=$(DB_URL) PORT=3600 go build -o ../$(RELEASE_DIR_WIN)/server.exe ./cmd/server
+	# copy frontend build
+	mkdir -p $(RELEASE_DIR_WIN)/frontend
+	cp -r frontend/dist $(RELEASE_DIR_WIN)/frontend/
+	# copy assets, migrations, uploads placeholder, scripts
+	mkdir -p $(RELEASE_DIR_WIN)/assets/fonts
+	cp -r backend/assets/fonts/* $(RELEASE_DIR_WIN)/assets/fonts/
+	mkdir -p $(RELEASE_DIR_WIN)/uploads
+	mkdir -p $(RELEASE_DIR_WIN)/migrations
+	cp backend/migrations/*.sql $(RELEASE_DIR_WIN)/migrations/
+	cp scripts/start_windows.ps1 $(RELEASE_DIR_WIN)/
+	mkdir -p $(RELEASE_DIR_WIN)/scripts/win
+	cp scripts/win/*.ps1 $(RELEASE_DIR_WIN)/scripts/win/ 2>/dev/null || true
+	# zip the bundle
+	cd release && zip -r physio-windows-portable.zip physio-bundle-win
+	@echo "Windows portable bundle: release/physio-windows-portable.zip"

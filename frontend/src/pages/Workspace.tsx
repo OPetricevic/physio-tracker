@@ -3,7 +3,7 @@ import { PatientList } from '../components/PatientList'
 import { PatientForm } from '../components/PatientForm'
 import { AnamnesisPanel } from '../components/AnamnesisPanel'
 import { usePatients } from '../data/PatientsContext'
-import type { Patient } from '../types'
+import type { Anamnesis, Patient } from '../types'
 import '../App.css'
 
 export function WorkspacePage() {
@@ -23,7 +23,7 @@ export function WorkspacePage() {
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
-  const [anamneses, setAnamneses] = useState([])
+  const [anamneses, setAnamneses] = useState<Anamnesis[]>([])
   const [anaPage, setAnaPage] = useState(1)
   const [anaHasNext, setAnaHasNext] = useState(false)
   const [anaQuery, setAnaQuery] = useState('')

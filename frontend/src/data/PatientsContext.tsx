@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { apiRequest } from '../api/client'
-import type { AnamnesisDto, ListAnamnesesResponse, ListPatientsResponse, PatientDto } from '../api/dto'
+import type { AnamnesisDto, ListAnamnesesResponse, ListPatientsResponse, PatientDto, UpdateAnamnesisPayload } from '../api/dto'
 import { useAuth } from '../auth'
 import type { Anamnesis, Patient } from '../types'
 

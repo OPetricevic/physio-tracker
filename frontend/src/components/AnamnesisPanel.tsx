@@ -13,11 +13,8 @@ type Props = {
   onAdd: (input: { note: string; diagnosis: string; therapy: string; otherInfo: string }) => void
   onDelete: (uuid: string) => void
   onUpdateIncludes: (uuid: string, includeVisitUuids: string[]) => Promise<void>
-  onGeneratePdf: (anamnesisUuid: string, includes?: string[]) => void
+  onGeneratePdf: (anamnesisUuid: string, includes?: string[], onlyCurrent?: boolean) => void
   onBackup: () => void
-  selectedVisits: Set<string>
-  onToggleVisit: (uuid: string) => void
-  onBulkPdf: () => void
 }
 
 export function AnamnesisPanel({
