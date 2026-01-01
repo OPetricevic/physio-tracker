@@ -25,6 +25,7 @@ Prereqs: Go, Node, PostgreSQL.
 2) On Windows (with Inno Setup installed), open `scripts/win/physio.iss` and build the installer `.exe`.
 3) Run the installer:
    - Copies the app to `C:\Program Files\PhysioTracker`.
+   - Installs PostgreSQL locally if missing, creates the `physio/physio` DB/user (port 5432).
    - Installs/updates the “PhysioTracker” Windows service (runs backend, serves frontend).
    - Adds Start menu/Desktop shortcuts to `http://localhost:3600`.
 4) Backups/restore:
@@ -33,7 +34,7 @@ Prereqs: Go, Node, PostgreSQL.
 
 ### Windows (portable/manual)
 - Download/produce `release/physio-windows-portable.zip` (`make package-win`), unzip.
-- Ensure Postgres is running; set `DATABASE_URL` if different.
+- Ensure Postgres is running; set `DATABASE_URL` if different (default uses port 5432).
 - Run `start_windows.ps1` (starts server on port 3600, serves frontend), or run `scripts\win\service_install.ps1` to install as a service.
 
 ### Linux
@@ -48,7 +49,7 @@ Prereqs: Go, Node, PostgreSQL.
 
 ## Defaults / Config
 - HTTP port: `PORT` (default 3600)
-- DB URL: `DATABASE_URL` (default `postgres://physio:physio@localhost:5433/physio?sslmode=disable` in Makefile; installer uses `:5432` on Linux)
+- DB URL: `DATABASE_URL` (dev Makefile default `postgres://physio:physio@localhost:5433/physio?sslmode=disable`; Windows/Linux installers default to `:5432`)
 - Frontend build served from `frontend/dist` (packaged into bundle)
 - Uploads/logos stored under `uploads/` (served at `/static`)
 

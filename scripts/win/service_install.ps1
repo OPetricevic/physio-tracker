@@ -11,7 +11,7 @@ $displayName = "Physio Tracker"
 $port = $env:PORT
 if (-not $port) { $port = "3600" }
 $db = $env:DATABASE_URL
-if (-not $db) { $db = "postgres://physio:physio@localhost:5433/physio?sslmode=disable" }
+if (-not $db) { $db = "postgres://physio:physio@localhost:5432/physio?sslmode=disable" }
 
 $envVars = "PORT=$port", "DATABASE_URL=$db", "FRONTEND_DIR=$($root)\..\frontend\dist"
 
