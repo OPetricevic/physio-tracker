@@ -13,7 +13,7 @@ type Props = {
   onAdd: (input: { note: string; diagnosis: string; therapy: string; otherInfo: string }) => void
   onDelete: (uuid: string) => void
   onUpdateIncludes: (uuid: string, includeVisitUuids: string[]) => Promise<void>
-  onGeneratePdf: (anamnesisUuid: string) => void
+  onGeneratePdf: (anamnesisUuid: string, includes?: string[]) => void
   onBackup: () => void
   selectedVisits: Set<string>
   onToggleVisit: (uuid: string) => void
@@ -45,6 +45,8 @@ export function AnamnesisPanel({
     currentId: null,
     selected: new Set(),
   })
+  const [selectionSearch, setSelectionSearch] = useState('')
+  const [onlyCurrent, setOnlyCurrent] = useState(false)
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -223,28 +225,82 @@ export function AnamnesisPanel({
           <div className="modal">
             <p className="eyebrow">Odaberi posjete</p>
             <h3>Uključi prethodne posjete u PDF</h3>
+            <input
+              type="search"
+              className="select"
+              placeholder="Traži po dijagnozi ili datumu"
+              value={selectionSearch}
+              onChange={(e) => setSelectionSearch(e.target.value)}
+              style={{ marginBottom: 12 }}
+            />
             <div className="list" style={{ maxHeight: 300, overflowY: 'auto' }}>
+              <label
+                htmlFor="only-current"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 0',
+                }}
+              >
+                <span style={{ fontSize: 15, color: '#4a4a4a' }}>Generiraj samo ovaj posjet</span>
+                <input
+                  type="checkbox"
+                  id="only-current"
+                  checked={onlyCurrent}
+                  onChange={(e) => {
+                    const checked = e.target.checked
+                    setOnlyCurrent(checked)
+                    if (checked) {
+                      setSelectionModal((prev) => ({ ...prev, selected: new Set() }))
+                    }
+                  }}
+                  style={{ justifySelf: 'end' }}
+                />
+              </label>
               {anamneses
                 .filter((a) => a.uuid !== selectionModal.currentId)
+                .filter((a) => {
+                  const term = selectionSearch.trim().toLowerCase()
+                  if (!term) return true
+                  return (
+                    a.diagnosis.toLowerCase().includes(term) ||
+                    new Date(a.createdAt).toLocaleDateString('hr-HR').includes(term)
+                  )
+                })
                 .map((a) => {
                   const checked = selectionModal.selected.has(a.uuid)
-                  return (
-                    <label key={a.uuid} className="checkbox-row">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          setSelectionModal((prev) => {
-                            const next = new Set(prev.selected)
-                            if (e.target.checked) next.add(a.uuid)
-                            else next.delete(a.uuid)
+                    return (
+                      <label
+                        key={a.uuid}
+                        className="checkbox-row"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr auto',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 0',
+                          opacity: onlyCurrent ? 0.4 : 1,
+                        }}
+                      >
+                        <span style={{ fontSize: 15 }}>
+                          {new Date(a.createdAt).toLocaleDateString('hr-HR')} — {a.diagnosis}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={onlyCurrent}
+                          onChange={(e) => {
+                            setSelectionModal((prev) => {
+                              const next = new Set(prev.selected)
+                              if (e.target.checked) next.add(a.uuid)
+                              else next.delete(a.uuid)
                             return { ...prev, selected: next }
                           })
                         }}
+                        style={{ justifySelf: 'end' }}
                       />
-                      <span>
-                        {new Date(a.createdAt).toLocaleDateString('hr-HR')} — {a.diagnosis}
-                      </span>
                     </label>
                   )
                 })}
@@ -263,9 +319,18 @@ export function AnamnesisPanel({
                 className="btn primary"
                 onClick={async () => {
                   if (!selectionModal.currentId) return
-                  await onUpdateIncludes(selectionModal.currentId, Array.from(selectionModal.selected))
-                  onGeneratePdf(selectionModal.currentId)
+                  const selectedIds = Array.from(selectionModal.selected)
+                  if (onlyCurrent) {
+                    onGeneratePdf(selectionModal.currentId, [], true)
+                  } else if (selectedIds.length > 0) {
+                    await onUpdateIncludes(selectionModal.currentId, selectedIds)
+                    onGeneratePdf(selectionModal.currentId, selectedIds)
+                  } else {
+                    // If nothing selected, keep previously saved includes on the record.
+                    onGeneratePdf(selectionModal.currentId)
+                  }
                   setSelectionModal({ open: false, currentId: null, selected: new Set() })
+                  setOnlyCurrent(false)
                 }}
               >
                 Spremi i generiraj

@@ -41,7 +41,7 @@ type PatientsContextValue = {
     uuid: string,
     payload: UpdateAnamnesisPayload,
   ) => Promise<Anamnesis | null>
-  generateAnamnesisPdf: (patientUuid: string, anamnesisUuid: string) => Promise<Blob | null>
+  generateAnamnesisPdf: (patientUuid: string, anamnesisUuid: string, includes?: string[], onlyCurrent?: boolean) => Promise<Blob | null>
 }
 
 const PatientsContext = createContext<PatientsContextValue | undefined>(undefined)
@@ -198,7 +198,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   ): Promise<{ items: Anamnesis[]; hasNext: boolean }> => {
     if (!user?.token) return { items: [], hasNext: false }
     const page = opts.page ?? 1
-    const pageSize = opts.pageSize ?? 5
+    const pageSize = opts.pageSize ?? 20
     const params = new URLSearchParams()
     params.set('current_page', String(page))
     params.set('page_size', String(pageSize))
@@ -288,13 +288,22 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const generateAnamnesisPdf = async (patientUuid: string, anamnesisUuid: string): Promise<Blob | null> => {
+  const generateAnamnesisPdf = async (
+    patientUuid: string,
+    anamnesisUuid: string,
+    includes?: string[],
+    onlyCurrent?: boolean,
+  ): Promise<Blob | null> => {
     if (!user?.token) return null
-    const res = await fetch(`/api/patients/${patientUuid}/anamneses/${anamnesisUuid}/pdf`, {
+    const url = new URL(`/api/patients/${patientUuid}/anamneses/${anamnesisUuid}/pdf`, window.location.origin)
+    if (onlyCurrent) url.searchParams.set('only_current', 'true')
+    const res = await fetch(url.toString(), {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${user.token}`,
+        'Content-Type': 'application/json',
       },
+      body: includes && includes.length > 0 ? JSON.stringify({ include_visit_uuids: includes }) : undefined,
     })
     if (!res.ok) {
       return null

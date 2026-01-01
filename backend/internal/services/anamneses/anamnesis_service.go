@@ -8,17 +8,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jung-kurt/gofpdf"
+	"os"
+	"path/filepath"
+
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	out "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/anamneses"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
 	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
+	"github.com/jung-kurt/gofpdf"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
-	"os"
-	"path/filepath"
 )
 
 type Service interface {
@@ -27,7 +28,7 @@ type Service interface {
 	List(ctx context.Context, doctorUUID, patientUUID, query string, pageSize, currentPage int) ([]*pb.Anamnesis, error)
 	Delete(ctx context.Context, doctorUUID, uuid string) error
 	Get(ctx context.Context, doctorUUID, uuid string) (*pb.Anamnesis, error)
-	GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anamnesisUUID string, include []string) ([]byte, error)
+	GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anamnesisUUID string, include []string, onlyCurrent bool) ([]byte, error)
 }
 
 type service struct {
@@ -57,15 +58,15 @@ func (s *service) Create(ctx context.Context, doctorUUID string, req *pb.CreateA
 	}
 	now := time.Now().UTC()
 	a := &pb.Anamnesis{
-		Uuid:             uuid.NewString(),
-		PatientUuid:      strings.TrimSpace(req.GetPatientUuid()),
-		Anamnesis:        strings.TrimSpace(req.GetAnamnesis()),
-		Diagnosis:        strings.TrimSpace(req.GetDiagnosis()),
-		Therapy:          strings.TrimSpace(req.GetTherapy()),
-		OtherInfo:        strings.TrimSpace(req.GetOtherInfo()),
+		Uuid:              uuid.NewString(),
+		PatientUuid:       strings.TrimSpace(req.GetPatientUuid()),
+		Anamnesis:         strings.TrimSpace(req.GetAnamnesis()),
+		Diagnosis:         strings.TrimSpace(req.GetDiagnosis()),
+		Therapy:           strings.TrimSpace(req.GetTherapy()),
+		OtherInfo:         strings.TrimSpace(req.GetOtherInfo()),
 		IncludeVisitUuids: req.IncludeVisitUuids,
-		CreatedAt:        timestamppb.New(now),
-		UpdatedAt:        nil,
+		CreatedAt:         timestamppb.New(now),
+		UpdatedAt:         nil,
 	}
 	created, err := s.repo.Create(ctx, a)
 	if err != nil {
@@ -109,7 +110,7 @@ func (s *service) Update(ctx context.Context, doctorUUID string, req *pb.UpdateA
 	existing.UpdatedAt = timestamppb.New(time.Now().UTC())
 
 	updated, err := s.repo.Update(ctx, existing)
-		if err != nil {
+	if err != nil {
 		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("update anamnesis: %w", se.ErrNotFound)
 		}
@@ -174,7 +175,7 @@ func isUniqueViolation(err error) bool {
 	return false
 }
 
-func (s *service) GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anamnesisUUID string, include []string) ([]byte, error) {
+func (s *service) GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anamnesisUUID string, include []string, onlyCurrent bool) ([]byte, error) {
 	if strings.TrimSpace(doctorUUID) == "" || strings.TrimSpace(patientUUID) == "" || strings.TrimSpace(anamnesisUUID) == "" {
 		return nil, fmt.Errorf("generate pdf: %w", se.ErrInvalidRequest)
 	}
@@ -202,7 +203,12 @@ func (s *service) GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anam
 	}
 
 	includeList := include
-	if len(includeList) == 0 && len(target.IncludeVisitUuids) > 0 {
+	if includeList == nil {
+		includeList = []string{}
+	}
+	if onlyCurrent {
+		includeList = []string{}
+	} else if len(includeList) == 0 && len(target.IncludeVisitUuids) > 0 {
 		includeList = target.IncludeVisitUuids
 	}
 	var prior []*pb.Anamnesis
@@ -228,13 +234,18 @@ func (s *service) GeneratePDF(ctx context.Context, doctorUUID, patientUUID, anam
 
 func buildPDF(profile *pb.DoctorProfile, patient *pb.Patient, current *pb.Anamnesis, prior []*pb.Anamnesis) ([]byte, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
+	// UTF-8 fonts to render regional characters correctly.
+	fontDir := filepath.Join("assets", "fonts")
+	pdf.SetFontLocation(fontDir)
+	pdf.AddUTF8Font("DejaVu", "", "DejaVuSans.ttf")
+	pdf.AddUTF8Font("DejaVu", "B", "DejaVuSans-Bold.ttf")
+	if pdf.Err() {
+		return nil, fmt.Errorf("generate pdf: load fonts from %s: %v", fontDir, pdf.Error())
+	}
 	pdf.SetMargins(15, 15, 15)
 	pdf.AddPage()
 	printedOn := time.Now().Format("02.01.2006.")
-	tr := pdf.UnicodeTranslatorFromDescriptor("cp1250")
-	if tr == nil {
-		tr = func(s string) string { return s }
-	}
+	tr := func(s string) string { return s }
 
 	// Header
 	if profile != nil && profile.GetLogoPath() != "" {
@@ -243,16 +254,16 @@ func buildPDF(profile *pb.DoctorProfile, patient *pb.Patient, current *pb.Anamne
 		}
 	}
 	// printed date top-right
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont("DejaVu", "", 10)
 	pdf.SetXY(-70, 15)
 	pdf.Cell(55, 5, tr("Datum ispisa: "+printedOn))
 
-	pdf.SetFont("Helvetica", "B", 14)
+	pdf.SetFont("DejaVu", "B", 14)
 	if profile != nil {
 		pdf.SetXY(50, 20)
 		pdf.Cell(0, 6, tr(profile.GetPracticeName()))
 		pdf.Ln(6)
-		pdf.SetFont("Helvetica", "", 10)
+		pdf.SetFont("DejaVu", "", 10)
 		pdf.SetX(50)
 		pdf.Cell(0, 5, tr(strings.TrimSpace(profile.GetRoleTitle()+" "+profile.GetDepartment())))
 		pdf.Ln(5)
@@ -270,11 +281,11 @@ func buildPDF(profile *pb.DoctorProfile, patient *pb.Patient, current *pb.Anamne
 		pdf.Ln(4)
 	}
 
-	pdf.SetFont("Helvetica", "B", 12)
+	pdf.SetFont("DejaVu", "B", 12)
 	pdf.Cell(0, 6, tr("Nalaz / Anamneza"))
 	pdf.Ln(10)
 
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont("DejaVu", "", 10)
 	pdf.Cell(40, 5, tr("Pacijent:"))
 	pdf.Cell(0, 5, tr(strings.TrimSpace(patient.GetFirstName()+" "+patient.GetLastName())))
 	pdf.Ln(5)
@@ -294,10 +305,10 @@ func buildPDF(profile *pb.DoctorProfile, patient *pb.Patient, current *pb.Anamne
 		pdf.Ln(8)
 	}
 
-	pdf.SetFont("Helvetica", "B", 11)
+	pdf.SetFont("DejaVu", "B", 11)
 	pdf.Cell(0, 6, tr(fmt.Sprintf("Posjet: %s", formatDate(current.GetCreatedAt()))))
 	pdf.Ln(7)
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont("DejaVu", "", 10)
 	pdf.MultiCell(0, 5, tr("Dijagnoza: "+current.GetDiagnosis()), "", "", false)
 	pdf.Ln(2)
 	pdf.MultiCell(0, 5, tr("Terapija: "+current.GetTherapy()), "", "", false)
@@ -313,12 +324,14 @@ func buildPDF(profile *pb.DoctorProfile, patient *pb.Patient, current *pb.Anamne
 	pdf.Ln(5)
 
 	if len(prior) > 0 {
-		pdf.SetFont("Helvetica", "B", 11)
+		pdf.SetFont("DejaVu", "B", 11)
 		pdf.Cell(0, 6, tr("Prethodni posjeti"))
 		pdf.Ln(7)
-		pdf.SetFont("Helvetica", "", 10)
+		pdf.SetFont("DejaVu", "", 10)
 		for _, v := range prior {
+			pdf.SetFont("DejaVu", "B", 10)
 			pdf.MultiCell(0, 5, tr(fmt.Sprintf("Datum: %s", formatDate(v.GetCreatedAt()))), "", "", false)
+			pdf.SetFont("DejaVu", "", 10)
 			pdf.MultiCell(0, 5, tr("Dijagnoza: "+v.GetDiagnosis()), "", "", false)
 			if strings.TrimSpace(v.GetTherapy()) != "" {
 				pdf.MultiCell(0, 5, tr("Terapija: "+v.GetTherapy()), "", "", false)
@@ -335,8 +348,12 @@ func buildPDF(profile *pb.DoctorProfile, patient *pb.Patient, current *pb.Anamne
 
 	if profile != nil && strings.TrimSpace(profile.GetFooterNote()) != "" {
 		pdf.SetY(-30)
-		pdf.SetFont("Helvetica", "I", 9)
+		pdf.SetFont("DejaVu", "", 9)
 		pdf.MultiCell(0, 5, tr(profile.GetFooterNote()), "", "C", false)
+	}
+
+	if pdf.Err() {
+		return nil, fmt.Errorf("generate pdf: prepare content: %v", pdf.Error())
 	}
 
 	var buf strings.Builder

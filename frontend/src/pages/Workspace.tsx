@@ -89,9 +89,9 @@ export function WorkspacePage() {
     setRecent((prev) => [uuid, ...prev.filter((id) => id !== uuid)].slice(0, 5))
   }
 
-  const handleGeneratePdf = async (anamnesisUuid: string) => {
+  const handleGeneratePdf = async (anamnesisUuid: string, includes?: string[], onlyCurrent?: boolean) => {
     if (!selectedPatient) return
-    const blob = await generateAnamnesisPdf(selectedPatient.uuid, anamnesisUuid)
+    const blob = await generateAnamnesisPdf(selectedPatient.uuid, anamnesisUuid, includes, onlyCurrent)
     if (!blob) return
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

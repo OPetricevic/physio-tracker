@@ -3,6 +3,7 @@ package anamneses
 import (
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -158,8 +159,12 @@ func (c *Controller) GeneratePDF(w http.ResponseWriter, r *http.Request) {
 		_ = common.JSONPB.Unmarshal(body, &req)
 	}
 
-	bytes, err := c.svc.GeneratePDF(r.Context(), doctorUUID, patientUUID, anamnesisUUID, req.IncludeVisitUuids)
+	onlyCurrent := r.URL.Query().Get("only_current") == "true"
+
+	bytes, err := c.svc.GeneratePDF(r.Context(), doctorUUID, patientUUID, anamnesisUUID, req.IncludeVisitUuids, onlyCurrent)
 	if err != nil {
+		// Log full error for debugging 500s.
+		log.Printf("generate pdf failed: %v", err)
 		switch {
 		case isSvcErr(err, se.ErrInvalidRequest):
 			common.WriteJSONError(w, "invalid_request", err.Error(), http.StatusBadRequest)

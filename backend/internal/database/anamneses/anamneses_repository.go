@@ -9,6 +9,7 @@ import (
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	out "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/outbound/anamneses"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -21,56 +22,55 @@ func NewRepository(db *gorm.DB) *Repository {
 }
 
 func (r *Repository) Create(ctx context.Context, a *pb.Anamnesis) (*pb.Anamnesis, error) {
-	orm, err := a.ToORM(ctx)
+	rec, err := pbToRecord(a)
 	if err != nil {
-		return nil, fmt.Errorf("creating anamnesis: convert to ORM: %w", err)
+		return nil, fmt.Errorf("creating anamnesis: convert: %w", err)
 	}
-	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
+	if err := r.db.WithContext(ctx).Create(&rec).Error; err != nil {
 		return nil, fmt.Errorf("creating anamnesis: insert: %w", err)
 	}
-	pbObj, err := orm.ToPB(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("creating anamnesis: convert to PB: %w", err)
-	}
-	return &pbObj, nil
+	return recordToPB(rec), nil
 }
 
 func (r *Repository) Update(ctx context.Context, a *pb.Anamnesis) (*pb.Anamnesis, error) {
-	orm, err := a.ToORM(ctx)
+	rec, err := pbToRecord(a)
 	if err != nil {
-		return nil, fmt.Errorf("updating anamnesis: convert to ORM: %w", err)
+		return nil, fmt.Errorf("updating anamnesis: convert: %w", err)
 	}
-	res := r.db.WithContext(ctx).Model(&orm).Where("uuid = ?", a.GetUuid()).Updates(&orm)
+	res := r.db.WithContext(ctx).
+		Model(&anamnesisRecord{}).
+		Where("uuid = ?", a.GetUuid()).
+		Updates(map[string]interface{}{
+			"patient_uuid":        rec.PatientUuid,
+			"anamnesis":           rec.Anamnesis,
+			"diagnosis":           rec.Diagnosis,
+			"therapy":             rec.Therapy,
+			"other_info":          rec.OtherInfo,
+			"include_visit_uuids": pq.StringArray(rec.IncludeVisitUuids),
+			"updated_at":          rec.UpdatedAt,
+		})
 	if res.Error != nil {
 		return nil, fmt.Errorf("updating anamnesis: %w", res.Error)
 	}
 	if res.RowsAffected == 0 {
 		return nil, fmt.Errorf("updating anamnesis: %w", re.ErrNotFound)
 	}
-	pbObj, err := orm.ToPB(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("updating anamnesis: convert to PB: %w", err)
-	}
-	return &pbObj, nil
+	return recordToPB(rec), nil
 }
 
 func (r *Repository) Get(ctx context.Context, uuid string) (*pb.Anamnesis, error) {
-	var orm pb.AnamnesisORM
-	if err := r.db.WithContext(ctx).Where("uuid = ?", uuid).First(&orm).Error; err != nil {
+	var rec anamnesisRecord
+	if err := r.db.WithContext(ctx).Where("uuid = ?", uuid).First(&rec).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("getting anamnesis: %w", re.ErrNotFound)
 		}
 		return nil, fmt.Errorf("getting anamnesis: %w", err)
 	}
-	pbObj, err := orm.ToPB(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getting anamnesis: convert to PB: %w", err)
-	}
-	return &pbObj, nil
+	return recordToPB(rec), nil
 }
 
 func (r *Repository) Delete(ctx context.Context, uuid string) error {
-	res := r.db.WithContext(ctx).Where("uuid = ?", uuid).Delete(&pb.AnamnesisORM{})
+	res := r.db.WithContext(ctx).Where("uuid = ?", uuid).Delete(&anamnesisRecord{})
 	if res.Error != nil {
 		return fmt.Errorf("delete anamnesis: %w", res.Error)
 	}
@@ -81,8 +81,8 @@ func (r *Repository) Delete(ctx context.Context, uuid string) error {
 }
 
 func (r *Repository) List(ctx context.Context, patientUUID string, doctorUUID string, query string, limit, offset int) ([]*pb.Anamnesis, error) {
-	var orms []pb.AnamnesisORM
-	q := r.db.WithContext(ctx).Model(&pb.AnamnesisORM{}).
+	var recs []anamnesisRecord
+	q := r.db.WithContext(ctx).Model(&anamnesisRecord{}).
 		Joins("JOIN patients ON patients.uuid = anamneses.patient_uuid").
 		Where("patients.uuid = ?", patientUUID)
 	if strings.TrimSpace(doctorUUID) != "" {
@@ -95,16 +95,12 @@ func (r *Repository) List(ctx context.Context, patientUUID string, doctorUUID st
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
 	}
-	if err := q.Order("anamneses.created_at DESC").Find(&orms).Error; err != nil {
+	if err := q.Order("anamneses.created_at DESC").Find(&recs).Error; err != nil {
 		return nil, fmt.Errorf("listing anamneses: %w", err)
 	}
-	res := make([]*pb.Anamnesis, 0, len(orms))
-	for _, orm := range orms {
-		pbObj, err := orm.ToPB(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("listing anamneses: convert to PB: %w", err)
-		}
-		res = append(res, &pbObj)
+	res := make([]*pb.Anamnesis, 0, len(recs))
+	for _, rec := range recs {
+		res = append(res, recordToPB(rec))
 	}
 	return res, nil
 }
@@ -113,17 +109,13 @@ func (r *Repository) ListByUUIDs(ctx context.Context, uuids []string) ([]*pb.Ana
 	if len(uuids) == 0 {
 		return []*pb.Anamnesis{}, nil
 	}
-	var orms []pb.AnamnesisORM
-	if err := r.db.WithContext(ctx).Where("uuid IN ?", uuids).Find(&orms).Error; err != nil {
+	var recs []anamnesisRecord
+	if err := r.db.WithContext(ctx).Where("uuid IN ?", uuids).Find(&recs).Error; err != nil {
 		return nil, fmt.Errorf("listing anamneses by uuids: %w", err)
 	}
-	res := make([]*pb.Anamnesis, 0, len(orms))
-	for _, orm := range orms {
-		pbObj, err := orm.ToPB(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("listing anamneses by uuids: convert to PB: %w", err)
-		}
-		res = append(res, &pbObj)
+	res := make([]*pb.Anamnesis, 0, len(recs))
+	for _, rec := range recs {
+		res = append(res, recordToPB(rec))
 	}
 	return res, nil
 }
