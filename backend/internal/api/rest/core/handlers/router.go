@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	"net/http"
 
 	authh "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/auth"
 	authctrl "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/auth"
