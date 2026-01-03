@@ -77,7 +77,12 @@ package: clean-release frontend-build
 	cp backend/migrations/*.sql $(RELEASE_DIR)/migrations/
 	cp scripts/start_linux.sh $(RELEASE_DIR)/
 	cp scripts/start_windows.ps1 $(RELEASE_DIR)/
+	mkdir -p $(RELEASE_DIR)/scripts/win
+	cp scripts/win/*.ps1 $(RELEASE_DIR)/scripts/win/ 2>/dev/null || true
 	@echo "Bundle created at $(RELEASE_DIR)"
+	# zip the bundle for release upload
+	cd release && zip -r physio-bundle.zip physio-bundle
+	@echo "Zipped bundle at release/physio-bundle.zip"
 
 clean-release:
 	rm -rf release
