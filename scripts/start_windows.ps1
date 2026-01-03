@@ -7,7 +7,7 @@ $root = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 if (-not $env:FRONTEND_DIR) { $env:FRONTEND_DIR = Join-Path $root "frontend/dist" }
 if (-not $env:PORT) { $env:PORT = "3600" }
-if (-not $env:DATABASE_URL) { $env:DATABASE_URL = "postgres://physio:physio@localhost:5432/physio?sslmode=disable" }
+if (-not $env:DATABASE_URL) { $env:DATABASE_URL = "postgres://physio:physio@localhost:5433/physio?sslmode=disable" }
 
 $serverPath = Join-Path $root "server.exe"
 if (-not (Test-Path $serverPath)) {
