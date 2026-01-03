@@ -42,6 +42,10 @@ func recordToPB(rec anamnesisRecord) *pb.Anamnesis {
 }
 
 func pbToRecord(a *pb.Anamnesis) (anamnesisRecord, error) {
+	include := a.GetIncludeVisitUuids()
+	if include == nil {
+		include = []string{}
+	}
 	rec := anamnesisRecord{
 		Uuid:              a.GetUuid(),
 		PatientUuid:       a.GetPatientUuid(),
@@ -49,7 +53,7 @@ func pbToRecord(a *pb.Anamnesis) (anamnesisRecord, error) {
 		Diagnosis:         a.GetDiagnosis(),
 		Therapy:           a.GetTherapy(),
 		OtherInfo:         a.GetOtherInfo(),
-		IncludeVisitUuids: pq.StringArray(a.GetIncludeVisitUuids()),
+		IncludeVisitUuids: pq.StringArray(include),
 	}
 	if a.GetCreatedAt() != nil {
 		rec.CreatedAt = a.GetCreatedAt().AsTime()

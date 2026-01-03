@@ -56,6 +56,10 @@ func (s *service) Create(ctx context.Context, doctorUUID string, req *pb.CreateA
 	if strings.TrimSpace(req.GetAnamnesis()) == "" || strings.TrimSpace(req.GetDiagnosis()) == "" || strings.TrimSpace(req.GetTherapy()) == "" {
 		return nil, fmt.Errorf("create anamnesis: %w", se.ErrInvalidRequest)
 	}
+	include := req.IncludeVisitUuids
+	if include == nil {
+		include = []string{}
+	}
 	now := time.Now().UTC()
 	a := &pb.Anamnesis{
 		Uuid:              uuid.NewString(),
@@ -64,7 +68,7 @@ func (s *service) Create(ctx context.Context, doctorUUID string, req *pb.CreateA
 		Diagnosis:         strings.TrimSpace(req.GetDiagnosis()),
 		Therapy:           strings.TrimSpace(req.GetTherapy()),
 		OtherInfo:         strings.TrimSpace(req.GetOtherInfo()),
-		IncludeVisitUuids: req.IncludeVisitUuids,
+		IncludeVisitUuids: include,
 		CreatedAt:         timestamppb.New(now),
 		UpdatedAt:         nil,
 	}

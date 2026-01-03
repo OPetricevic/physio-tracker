@@ -44,7 +44,7 @@ export function ProfilePage() {
   useEffect(() => {
     let mounted = true
     setLoading(true)
-    apiRequest<ProfileResponse>('/doctor/profile', { method: 'GET', token })
+    apiRequest<ProfileResponse>('/api/doctor/profile', { method: 'GET', token })
       .then((res) => {
         if (!mounted) return
         setProfile({
@@ -87,7 +87,7 @@ export function ProfilePage() {
     setError(null)
     setSaved(false)
     try {
-      const res = await apiRequest<ProfileResponse>('/doctor/profile', {
+      const res = await apiRequest<ProfileResponse>('/api/doctor/profile', {
         method: 'PUT',
         token,
         body: { profile },

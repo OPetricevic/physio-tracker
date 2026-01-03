@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = useCallback(async (identifier: string, password: string) => {
-    const res = await apiRequest<LoginResponse>('/auth/login', {
+    const res = await apiRequest<LoginResponse>('/api/auth/login', {
       method: 'POST',
       body: { identifier, password },
     })
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     lastName: string
     password: string
   }) => {
-    const res = await apiRequest<LoginResponse>('/auth/register', {
+    const res = await apiRequest<LoginResponse>('/api/auth/register', {
       method: 'POST',
       body: {
         email: payload.email,

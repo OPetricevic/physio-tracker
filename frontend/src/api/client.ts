@@ -1,7 +1,8 @@
 // API base:
 // - In dev we proxy `/api` to the Go backend via Vite (see vite.config.ts).
-// - If VITE_API_URL is set, we use it instead (e.g., prod build or custom host).
-const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
+// - If VITE_API_URL is set (e.g., http://localhost:3600/api), we use it.
+// - Otherwise default to empty string; call sites already include full paths like `/api/...`.
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT'
 

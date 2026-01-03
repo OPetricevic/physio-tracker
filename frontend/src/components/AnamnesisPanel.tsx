@@ -4,6 +4,7 @@ import type { Anamnesis } from '../types'
 type Props = {
   patientName: string
   anamneses: Anamnesis[]
+  loadSelectionOptions: () => Promise<Anamnesis[]>
   searchTerm: string
   onSearchChange: (term: string) => void
   page: number
@@ -31,6 +32,7 @@ export function AnamnesisPanel({
   onUpdateIncludes,
   onGeneratePdf,
   onBackup,
+  loadSelectionOptions,
 }: Props) {
   const [note, setNote] = useState('')
   const [diagnosis, setDiagnosis] = useState('')
@@ -43,6 +45,7 @@ export function AnamnesisPanel({
     selected: new Set(),
   })
   const [selectionSearch, setSelectionSearch] = useState('')
+  const [selectionList, setSelectionList] = useState<Anamnesis[]>([])
   const [onlyCurrent, setOnlyCurrent] = useState(false)
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -103,17 +106,22 @@ export function AnamnesisPanel({
                     type="button"
                     className="btn text"
                     onClick={() => {
-                      // open selection modal with current includes
-                      setSelectionModal({
-                        open: true,
-                        currentId: entry.uuid,
-                        selected: new Set(entry.includeVisitUuids ?? []),
-                      })
-                    }}
-                    disabled={disabled}
-                  >
-                    Generiraj PDF
-                  </button>
+                    // open selection modal with current includes
+                    setSelectionModal({
+                      open: true,
+                      currentId: entry.uuid,
+                      selected: new Set(entry.includeVisitUuids ?? []),
+                    })
+                    setSelectionList(anamneses)
+                    void (async () => {
+                      const all = await loadSelectionOptions()
+                      setSelectionList(all)
+                    })()
+                  }}
+                  disabled={disabled}
+                >
+                  Generiraj PDF
+                </button>
                   <button
                     type="button"
                     className="btn text danger"
@@ -257,6 +265,7 @@ export function AnamnesisPanel({
                 />
               </label>
               {anamneses
+              {(selectionList.length ? selectionList : anamneses)
                 .filter((a) => a.uuid !== selectionModal.currentId)
                 .filter((a) => {
                   const term = selectionSearch.trim().toLowerCase()

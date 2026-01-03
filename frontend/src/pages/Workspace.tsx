@@ -28,6 +28,7 @@ export function WorkspacePage() {
   const [anaHasNext, setAnaHasNext] = useState(false)
   const [anaQuery, setAnaQuery] = useState('')
   const pageSize = 5
+  const selectionPageSize = 500
 
   const filteredPatients = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -50,6 +51,16 @@ export function WorkspacePage() {
     setAnamneses(items)
     setAnaHasNext(hasNext)
     setAnaPage(pageNum)
+  }
+
+  const loadSelectionOptions = async () => {
+    if (!selectedUuid) return []
+    const { items } = await fetchAnamneses(selectedUuid, {
+      query: '',
+      page: 1,
+      pageSize: selectionPageSize,
+    })
+    return items
   }
 
   useEffect(() => {
@@ -147,6 +158,7 @@ export function WorkspacePage() {
             <AnamnesisPanel
               patientName={`${selectedPatient.firstName} ${selectedPatient.lastName}`}
               anamneses={anamneses}
+              loadSelectionOptions={loadSelectionOptions}
               searchTerm={anaQuery}
               onSearchChange={(term) => {
                 setAnaQuery(term)

@@ -94,7 +94,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
       params.set('page_size', '10')
       params.set('current_page', '1')
       if (searchTerm.trim()) params.set('query', searchTerm.trim())
-      const res = await apiRequest<ListPatientsResponse>(`/patients?${params.toString()}`, {
+      const res = await apiRequest<ListPatientsResponse>(`/api/patients?${params.toString()}`, {
         token: user.token,
       })
       setPatients(res.patients.map(dtoToPatient))
@@ -125,7 +125,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   }) => {
     if (!user?.token) return null
     try {
-      const dto = await apiRequest<PatientDto>('/patients/create', {
+      const dto = await apiRequest<PatientDto>('/api/patients/create', {
         method: 'POST',
         token: user.token,
         body: {
@@ -154,7 +154,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user?.token) return
     try {
-      const dto = await apiRequest<PatientDto>(`/patients/${uuid}`, {
+      const dto = await apiRequest<PatientDto>(`/api/patients/${uuid}`, {
         method: 'PATCH',
         token: user.token,
         body: {
@@ -179,7 +179,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   const deletePatient = async (uuid: string) => {
     if (!user?.token) return
     try {
-      await apiRequest<null>(`/patients/${uuid}`, { method: 'DELETE', token: user.token })
+      await apiRequest<null>(`/api/patients/${uuid}`, { method: 'DELETE', token: user.token })
       setPatients((prev) => prev.filter((p) => p.uuid !== uuid))
       setAnamneses((prev) => {
         const copy = { ...prev }
@@ -204,7 +204,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
     params.set('page_size', String(pageSize))
     if (opts.query?.trim()) params.set('query', opts.query.trim())
     const res = await apiRequest<ListAnamnesesResponse>(
-      `/patients/${patientUuid}/anamneses?${params.toString()}`,
+      `/api/patients/${patientUuid}/anamneses?${params.toString()}`,
       { token: user.token },
     )
     const items = res.anamneses.map(dtoToAnamnesis)
@@ -221,7 +221,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user?.token) return null
     try {
-      const dto = await apiRequest<AnamnesisDto>(`/patients/${patientUuid}/anamneses`, {
+      const dto = await apiRequest<AnamnesisDto>(`/api/patients/${patientUuid}/anamneses`, {
         method: 'POST',
         token: user.token,
         body: {
@@ -249,7 +249,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   const deleteAnamnesis = async (patientUuid: string, uuid: string) => {
     if (!user?.token) return
     try {
-      await apiRequest<null>(`/patients/${patientUuid}/anamneses/${uuid}`, {
+      await apiRequest<null>(`/api/patients/${patientUuid}/anamneses/${uuid}`, {
         method: 'DELETE',
         token: user.token,
       })
@@ -270,7 +270,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
   ): Promise<Anamnesis | null> => {
     if (!user?.token) return null
     try {
-      const dto = await apiRequest<AnamnesisDto>(`/patients/${patientUuid}/anamneses/${uuid}`, {
+      const dto = await apiRequest<AnamnesisDto>(`/api/patients/${patientUuid}/anamneses/${uuid}`, {
         method: 'PATCH',
         token: user.token,
         body: payload,
