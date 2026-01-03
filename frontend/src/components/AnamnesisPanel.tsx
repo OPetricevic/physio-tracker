@@ -264,7 +264,6 @@ export function AnamnesisPanel({
                   style={{ justifySelf: 'end' }}
                 />
               </label>
-              {anamneses
               {(selectionList.length ? selectionList : anamneses)
                 .filter((a) => a.uuid !== selectionModal.currentId)
                 .filter((a) => {

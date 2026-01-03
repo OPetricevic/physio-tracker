@@ -6,7 +6,7 @@ param(
   [string]$SuperPassword = "physio",
   [string]$DbUser = "physio",
   [string]$DbPassword = "physio",
-  [int]$Port = 5432
+  [int]$Port = 5433
 )
 
 # Installs PostgreSQL silently if it is not already present, then ensures the
