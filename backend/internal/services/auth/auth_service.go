@@ -14,7 +14,6 @@ import (
 	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	credrepo "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
@@ -74,7 +73,7 @@ func (s *service) Register(ctx context.Context, req *RegisterRequest) (*pb.AuthT
 	}
 	doc, err := s.doctorRepo.Create(ctx, doc)
 	if err != nil {
-		if isUniqueViolation(err) || errors.Is(err, re.ErrConflict) {
+		if errors.Is(err, re.ErrConflict) {
 			return nil, fmt.Errorf("create doctor: %w", ErrConflict)
 		}
 		return nil, fmt.Errorf("create doctor: %w", err)
@@ -160,12 +159,4 @@ func (s *service) findDoctor(ctx context.Context, identifier string) (*pb.Doctor
 		return nil, fmt.Errorf("find doctor: %w", err)
 	}
 	return doc, nil
-}
-
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
-	}
-	return false
 }

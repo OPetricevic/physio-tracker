@@ -8,8 +8,8 @@ import (
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
-	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type DoctorsRepository struct {
@@ -132,9 +132,16 @@ func (r *DoctorsRepository) List(ctx context.Context, query string, limit, offse
 }
 
 func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+	var pgErr interface{ Code string }
 	if errors.As(err, &pgErr) {
 		return pgErr.Code == "23505"
+	}
+	// gorm may wrap in logger
+	if errors.Is(err, logger.ErrRecordNotFound) {
+		return false
 	}
 	return false
 }
