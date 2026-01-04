@@ -151,6 +151,9 @@ export function ProfilePage() {
         </button>
       </div>
 
+      {saved && <div className="alert success">Profil spremljen.</div>}
+      {error && <div className="alert error">{error}</div>}
+
       {loading ? <div className="card">Učitavanje...</div> : (
         <div className="profile-layout">
           <div className="card section">
