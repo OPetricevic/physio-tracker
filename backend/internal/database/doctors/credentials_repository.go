@@ -7,7 +7,7 @@ import (
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
-	"github.com/jackc/pgconn"
+	dbErrs "github.com/OPetricevic/physio-tracker/backend/internal/database/dberrors"
 	"gorm.io/gorm"
 )
 
@@ -32,7 +32,7 @@ func (r *credentialsRepo) Create(ctx context.Context, c *pt.DoctorCredentials) (
 		return nil, fmt.Errorf("creating credentials: convert to ORM: %w", err)
 	}
 	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
-		if isCredUniqueViolation(err) {
+		if dbErrs.IsUniqueViolation(err) {
 			return nil, fmt.Errorf("creating credentials: %w", re.ErrConflict)
 		}
 		return nil, fmt.Errorf("creating credentials: insert: %w", err)
@@ -66,7 +66,7 @@ func (r *credentialsRepo) Update(ctx context.Context, c *pt.DoctorCredentials) (
 	}
 	res := r.db.WithContext(ctx).Model(&orm).Where("uuid = ?", c.GetUuid()).Updates(&orm)
 	if res.Error != nil {
-		if isCredUniqueViolation(res.Error) {
+		if dbErrs.IsUniqueViolation(res.Error) {
 			return nil, fmt.Errorf("updating credentials: %w", re.ErrConflict)
 		}
 		return nil, fmt.Errorf("updating credentials: %w", res.Error)
@@ -79,12 +79,3 @@ func (r *credentialsRepo) Update(ctx context.Context, c *pt.DoctorCredentials) (
 		return nil, fmt.Errorf("updating credentials: convert to PB: %w", err)
 	}
 	return &pbObj, nil
-}
-
-func isCredUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
-	}
-	return false
-}

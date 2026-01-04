@@ -12,7 +12,6 @@ import (
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
 	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
@@ -51,7 +50,7 @@ func (s *service) Create(ctx context.Context, req *pb.CreateDoctorRequest) (*pb.
 	}
 	created, err := s.repo.Create(ctx, doc)
 	if err != nil {
-		if isUniqueViolation(err) {
+		if errors.Is(err, re.ErrConflict) {
 			return nil, fmt.Errorf("create doctor: %w", se.ErrConflict)
 		}
 		return nil, fmt.Errorf("create doctor: %w", err)
@@ -88,7 +87,7 @@ func (s *service) Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.
 		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("update doctor: %w", se.ErrNotFound)
 		}
-		if isUniqueViolation(err) {
+		if errors.Is(err, re.ErrConflict) {
 			return nil, fmt.Errorf("update doctor: %w", se.ErrConflict)
 		}
 		return nil, fmt.Errorf("update doctor: %w", err)
@@ -122,12 +121,4 @@ func (s *service) List(ctx context.Context, query string, pageSize, currentPage 
 		return nil, fmt.Errorf("list doctors: %w", err)
 	}
 	return list, nil
-}
-
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
-	}
-	return false
 }
