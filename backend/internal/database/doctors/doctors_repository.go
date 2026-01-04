@@ -8,7 +8,6 @@ import (
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
-	dbErrs "github.com/OPetricevic/physio-tracker/backend/internal/database/dberrors"
 	"gorm.io/gorm"
 )
 
@@ -26,11 +25,10 @@ func (r *DoctorsRepository) Create(ctx context.Context, d *pt.Doctor) (*pt.Docto
 		return nil, fmt.Errorf("creating doctor: convert to ORM: %w", err)
 	}
 	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
-		if dbErrs.IsUniqueViolation(err) {
-			return nil, fmt.Errorf("creating doctor: %w", re.ErrConflict)
-		}
-		return nil, fmt.Errorf("creating doctor: insert: %w", err)
+		fmt.Printf("DB err type: %T\n", err)
+		fmt.Printf("DB err: %+v\n", err)
 	}
+
 	pbDoc, err := orm.ToPB(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("creating doctor: convert to PB: %w", err)

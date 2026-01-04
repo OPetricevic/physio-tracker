@@ -35,6 +35,9 @@ func (r *credentialsRepo) Create(ctx context.Context, c *pt.DoctorCredentials) (
 		if dbErrs.IsUniqueViolation(err) {
 			return nil, fmt.Errorf("creating credentials: %w", re.ErrConflict)
 		}
+		if dbErrs.IsForeignKeyViolation(err) {
+			return nil, fmt.Errorf("creating credentials: %w", re.ErrNotFound)
+		}
 		return nil, fmt.Errorf("creating credentials: insert: %w", err)
 	}
 	pbObj, err := orm.ToPB(ctx)
@@ -79,3 +82,4 @@ func (r *credentialsRepo) Update(ctx context.Context, c *pt.DoctorCredentials) (
 		return nil, fmt.Errorf("updating credentials: convert to PB: %w", err)
 	}
 	return &pbObj, nil
+}

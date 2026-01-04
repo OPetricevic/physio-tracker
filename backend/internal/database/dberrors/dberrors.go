@@ -19,3 +19,12 @@ func IsUniqueViolation(err error) bool {
 	}
 	return false
 }
+
+// IsForeignKeyViolation returns true if the error represents a foreign key constraint violation.
+func IsForeignKeyViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23503"
+	}
+	return false
+}

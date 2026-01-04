@@ -93,6 +93,10 @@ func (s *service) Register(ctx context.Context, req *RegisterRequest) (*pb.AuthT
 		if errors.Is(err, re.ErrConflict) {
 			return nil, fmt.Errorf("create credentials: %w", se.ErrConflict)
 		}
+		if errors.Is(err, re.ErrNotFound) {
+			// doctor missing / fk violation: treat as conflict for user-facing purposes
+			return nil, fmt.Errorf("create credentials: %w", se.ErrConflict)
+		}
 		return nil, fmt.Errorf("create credentials: %w", err)
 	}
 
