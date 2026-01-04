@@ -1,6 +1,6 @@
 ; Inno Setup script for Physio Tracker (Windows)
-; This assumes you already built the bundle via `make package` into release/physio-bundle
-; Adjust paths as needed before building the installer.
+; This script lives in: physio-bundle\physio-bundle\scripts\win\physio.iss
+; Bundle root is:      physio-bundle\physio-bundle\
 
 [Setup]
 AppName=Physio Tracker
@@ -13,18 +13,28 @@ OutputBaseFilename=physio-tracker-setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+PrivilegesRequired=admin
 
 [Files]
-Source: "..\release\physio-bundle\server.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\release\physio-bundle\server"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
-Source: "..\release\physio-bundle\frontend\dist\*"; DestDir: "{app}\frontend\dist"; Flags: recursesubdirs ignoreversion
-Source: "..\release\physio-bundle\assets\fonts\*"; DestDir: "{app}\assets\fonts"; Flags: recursesubdirs ignoreversion
-Source: "..\release\physio-bundle\uploads\*"; DestDir: "{app}\uploads"; Flags: recursesubdirs ignoreversion
-Source: "..\scripts\start_windows.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\scripts\win\install_postgres.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
-Source: "..\scripts\win\service_install.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
-Source: "..\scripts\win\backup.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
-Source: "..\scripts\win\restore.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+; App binary (bundle root)
+; NOTE: You should have renamed "server" -> "server.exe" on Windows
+Source: "..\..\server.exe"; DestDir: "{app}"; Flags: ignoreversion
+
+; Frontend + assets (bundle root)
+Source: "..\..\frontend\dist\*"; DestDir: "{app}\frontend\dist"; Flags: recursesubdirs ignoreversion
+Source: "..\..\assets\fonts\*"; DestDir: "{app}\assets\fonts"; Flags: recursesubdirs ignoreversion
+
+; uploads may be empty, so don't fail build
+Source: "..\..\uploads\*"; DestDir: "{app}\uploads"; Flags: recursesubdirs ignoreversion skipifsourcedoesntexist
+
+; Root script (bundle root)
+Source: "..\..\start_windows.ps1"; DestDir: "{app}"; Flags: ignoreversion
+
+; Windows scripts (these are in the SAME folder as this .iss: scripts\win\)
+Source: "install_postgres.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "service_install.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "backup.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
+Source: "restore.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 
 [Run]
 ; Install PostgreSQL if missing, then install service (uses bundled server.exe)
@@ -36,5 +46,5 @@ Name: "{commonprograms}\Physio Tracker"; Filename: "http://localhost:3600"
 Name: "{commondesktop}\Physio Tracker"; Filename: "http://localhost:3600"
 
 [UninstallRun]
-; Remove service on uninstall
-Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""if (Get-Service -Name PhysioTracker -ErrorAction SilentlyContinue) { Stop-Service PhysioTracker -ErrorAction SilentlyContinue; sc.exe delete PhysioTracker }"""
+; Remove service on uninstall (escaped braces)
+Filename: "powershell.exe"; Parameters: "-ExecutionPolicy Bypass -Command ""if (Get-Service -Name PhysioTracker -ErrorAction SilentlyContinue) {{ Stop-Service PhysioTracker -ErrorAction SilentlyContinue; sc.exe delete PhysioTracker }}"""
