@@ -135,13 +135,6 @@ func isUniqueViolation(err error) bool {
 	if errors.Is(err, gorm.ErrDuplicatedKey) {
 		return true
 	}
-	var pgErr interface{ Code string }
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
-	}
-	// gorm may wrap in logger
-	if errors.Is(err, logger.ErrRecordNotFound) {
-		return false
-	}
+	// ignore other cases; treat as non-unique
 	return false
 }
