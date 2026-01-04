@@ -33,8 +33,12 @@ export function RegisterPage() {
         password: password.trim(),
       })
       navigate('/app', { replace: true })
-    } catch (err) {
-      setError('Registracija nije uspjela. Provjerite podatke i pokušajte ponovno.')
+    } catch (err: any) {
+      if (err?.status === 409) {
+        setError('Email ili korisničko ime je zauzeto.')
+      } else {
+        setError('Registracija nije uspjela. Provjerite podatke i pokušajte ponovno.')
+      }
       console.error(err)
     } finally {
       setLoading(false)

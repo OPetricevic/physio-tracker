@@ -28,7 +28,9 @@ export async function apiRequest<T>(
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `Request failed with status ${res.status}`)
+    const err: any = new Error(text || `Request failed with status ${res.status}`)
+    err.status = res.status
+    throw err
   }
   // For 204 no content, return null as any
   if (res.status === 204) return null as T
