@@ -8,6 +8,7 @@ import (
 
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
+	dbErrs "github.com/OPetricevic/physio-tracker/backend/internal/database/dberrors"
 	"gorm.io/gorm"
 )
 
@@ -25,8 +26,10 @@ func (r *DoctorsRepository) Create(ctx context.Context, d *pt.Doctor) (*pt.Docto
 		return nil, fmt.Errorf("creating doctor: convert to ORM: %w", err)
 	}
 	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
-		fmt.Printf("DB err type: %T\n", err)
-		fmt.Printf("DB err: %+v\n", err)
+		if dbErrs.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("creating doctor: %w", re.ErrConflict)
+		}
+		return nil, fmt.Errorf("creating doctor: insert: %w", err)
 	}
 
 	pbDoc, err := orm.ToPB(ctx)
@@ -43,7 +46,7 @@ func (r *DoctorsRepository) Update(ctx context.Context, d *pt.Doctor) (*pt.Docto
 	}
 	res := r.db.WithContext(ctx).Model(&orm).Where("uuid = ?", d.GetUuid()).Updates(&orm)
 	if res.Error != nil {
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
+		if errors.Is(res.Error, gorm.ErrDuplicatedKey) {
 			return nil, fmt.Errorf("updating doctor: %w", re.ErrConflict)
 		}
 		return nil, fmt.Errorf("updating doctor: %w", res.Error)
