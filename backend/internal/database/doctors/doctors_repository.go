@@ -9,7 +9,6 @@ import (
 	pt "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	re "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/repoerrors"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type DoctorsRepository struct {
@@ -26,7 +25,7 @@ func (r *DoctorsRepository) Create(ctx context.Context, d *pt.Doctor) (*pt.Docto
 		return nil, fmt.Errorf("creating doctor: convert to ORM: %w", err)
 	}
 	if err := r.db.WithContext(ctx).Create(&orm).Error; err != nil {
-		if isUniqueViolation(err) {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return nil, fmt.Errorf("creating doctor: %w", re.ErrConflict)
 		}
 		return nil, fmt.Errorf("creating doctor: insert: %w", err)
@@ -129,12 +128,4 @@ func (r *DoctorsRepository) List(ctx context.Context, query string, limit, offse
 		res = append(res, &pbDoc)
 	}
 	return res, nil
-}
-
-func isUniqueViolation(err error) bool {
-	if errors.Is(err, gorm.ErrDuplicatedKey) {
-		return true
-	}
-	// ignore other cases; treat as non-unique
-	return false
 }
