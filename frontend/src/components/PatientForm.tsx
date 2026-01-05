@@ -105,6 +105,7 @@ export function PatientForm({ onCreate }: Props) {
             value={dateOfBirth}
             onChange={(e) => setDateOfBirth(e.target.value)}
           />
+          <p className="muted-small">Prikaz datuma ovisi o pregledniku; unos je dd.mm.yyyy.</p>
         </div>
         <div className="field">
           <label htmlFor="sex">Spol</label>
