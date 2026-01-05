@@ -18,7 +18,8 @@ export function PatientForm({ onCreate }: Props) {
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [dateIso, setDateIso] = useState('') // yyyy-mm-dd for submission
+  const [dateDisplay, setDateDisplay] = useState('') // dd.mm.yyyy for UI
   const [sex, setSex] = useState('')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -29,15 +30,34 @@ export function PatientForm({ onCreate }: Props) {
       lastName: lastName.trim(),
       phone: phone.trim() || undefined,
       address: address.trim() || undefined,
-      dateOfBirth: dateOfBirth || undefined,
+      dateOfBirth: dateIso || undefined,
       sex: sex || undefined,
     })
     setFirstName('')
     setLastName('')
     setPhone('')
     setAddress('')
-    setDateOfBirth('')
+    setDateIso('')
+    setDateDisplay('')
     setSex('')
+  }
+
+  const formatHr = (iso: string) => {
+    if (!iso) return ''
+    const d = new Date(iso + 'T00:00:00Z')
+    return d.toLocaleDateString('hr-HR')
+  }
+
+  const parseHr = (value: string) => {
+    const m = value.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
+    if (!m) return ''
+    const [_, dd, mm, yyyy] = m
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  const handleDateInput = (iso: string) => {
+    setDateIso(iso)
+    setDateDisplay(formatHr(iso))
   }
 
   return (
@@ -101,11 +121,33 @@ export function PatientForm({ onCreate }: Props) {
           <input
             id="dateOfBirth"
             name="dateOfBirth"
-            type="date"
-            value={dateOfBirth}
-            onChange={(e) => setDateOfBirth(e.target.value)}
+            type="text"
+            inputMode="numeric"
+            placeholder="dd.mm.yyyy"
+            value={dateDisplay}
+            onChange={(e) => {
+              const val = e.target.value
+              setDateDisplay(val)
+              const parsed = parseHr(val.trim())
+              setDateIso(parsed)
+            }}
+            onFocus={(e) => {
+              const hidden = document.getElementById('dob-hidden') as HTMLInputElement | null
+              if (hidden?.showPicker) {
+                hidden.showPicker()
+                e.preventDefault()
+              }
+            }}
           />
-          <p className="muted-small">Prikaz datuma ovisi o pregledniku; unos je dd.mm.yyyy.</p>
+          <input
+            id="dob-hidden"
+            type="date"
+            value={dateIso}
+            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+            onChange={(e) => handleDateInput(e.target.value)}
+            tabIndex={-1}
+            aria-hidden="true"
+          />
         </div>
         <div className="field">
           <label htmlFor="sex">Spol</label>
