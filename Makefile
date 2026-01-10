@@ -79,6 +79,7 @@ package: clean-release frontend-build
 	cp scripts/start_windows.ps1 $(RELEASE_DIR)/
 	mkdir -p $(RELEASE_DIR)/scripts/win
 	cp scripts/win/*.ps1 $(RELEASE_DIR)/scripts/win/ 2>/dev/null || true
+	cp scripts/win/physio.iss $(RELEASE_DIR)/scripts/win/ 2>/dev/null || true
 	@echo "Bundle created at $(RELEASE_DIR)"
 	# zip the bundle for release upload
 	cd release && zip -r physio-bundle.zip physio-bundle
