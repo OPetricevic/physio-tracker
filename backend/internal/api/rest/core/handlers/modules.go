@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/anamneses"
+	backuphandlers "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/backup"
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/doctorprofiles"
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/doctors"
 	uploadhandler "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/files"
 	"github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/handlers/patients"
 	canamneses "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/anamneses"
+	cbackup "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/backup"
 	cdoctorprofiles "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/doctorprofiles"
 	cdoctors "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/doctors"
 	cpatients "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/inbound/patients"
@@ -15,11 +17,13 @@ import (
 	dbdoctors "github.com/OPetricevic/physio-tracker/backend/internal/database/doctors"
 	dbpatients "github.com/OPetricevic/physio-tracker/backend/internal/database/patients"
 	svcanamneses "github.com/OPetricevic/physio-tracker/backend/internal/services/anamneses"
+	svcbackup "github.com/OPetricevic/physio-tracker/backend/internal/services/backup"
 	svcdoctorprofiles "github.com/OPetricevic/physio-tracker/backend/internal/services/doctorprofiles"
 	svcdoctors "github.com/OPetricevic/physio-tracker/backend/internal/services/doctors"
 	svcpatients "github.com/OPetricevic/physio-tracker/backend/internal/services/patients"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
+	"os"
 )
 
 // Module registers HTTP routes for a feature area.
@@ -34,6 +38,7 @@ var moduleBuilders = []func(*gorm.DB) Module{
 	NewAnamnesisModule,
 	NewDoctorProfileModule,
 	NewUploadModule,
+	NewBackupModule,
 }
 
 // Patient module wiring (repo -> service -> controller -> handler).
@@ -113,4 +118,20 @@ func NewUploadModule(_ *gorm.DB) Module {
 
 func (m *uploadModule) Register(r *mux.Router) {
 	r.HandleFunc("/files/upload", m.handler.Upload).Methods("POST")
+}
+
+// Backup module wiring.
+type backupModule struct {
+	handler *backuphandlers.Handler
+}
+
+func NewBackupModule(_ *gorm.DB) Module {
+	dsn := os.Getenv("DATABASE_URL")
+	svc := svcbackup.NewService(dsn)
+	ctrl := cbackup.NewController(svc)
+	return &backupModule{handler: backuphandlers.NewHandler(ctrl)}
+}
+
+func (m *backupModule) Register(r *mux.Router) {
+	m.handler.RegisterRoutes(r)
 }

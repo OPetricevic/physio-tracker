@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PatientList } from '../components/PatientList'
 import { PatientForm } from '../components/PatientForm'
 import { AnamnesisPanel } from '../components/AnamnesisPanel'
@@ -20,6 +21,7 @@ export function WorkspacePage() {
     loading,
     error,
   } = usePatients()
+  const navigate = useNavigate()
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [recent, setRecent] = useState<string[]>([])
@@ -113,7 +115,7 @@ export function WorkspacePage() {
   }
 
   const handleBackup = () => {
-    alert(`Pokrenula bi se sigurnosna kopija za pacijenta ${selectedPatient?.uuid ?? ''}`)
+    navigate('/app/sigurnosna-kopija')
   }
 
   const handleUpdateIncludes = async (anamnesisUuid: string, includes: string[]) => {

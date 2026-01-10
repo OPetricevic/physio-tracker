@@ -8,6 +8,7 @@ import { WorkspacePage } from './pages/Workspace'
 import { SchedulePage } from './pages/Schedule'
 import { ManagePatientsPage } from './pages/ManagePatients'
 import { ProfilePage } from './pages/Profile'
+import { BackupPage } from './pages/Backup'
 
 function Protected({ children }: { children: ReactElement }) {
   const { user } = useAuth()
@@ -40,6 +41,9 @@ function AppShell() {
           </NavLink>
           <NavLink to="/app/profil" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
             Profil
+          </NavLink>
+          <NavLink to="/app/sigurnosna-kopija" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
+            Sigurnosna kopija
           </NavLink>
         </nav>
         <div className="nav-actions">
@@ -76,6 +80,7 @@ function App() {
               <Route path="upravljanje" element={<ManagePatientsPage />} />
               <Route path="raspored" element={<SchedulePage />} />
               <Route path="profil" element={<ProfilePage />} />
+              <Route path="sigurnosna-kopija" element={<BackupPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
