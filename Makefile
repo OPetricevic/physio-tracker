@@ -4,6 +4,8 @@ BACKEND_DIR := backend
 DB_URL ?= postgres://physio:physio@localhost:5433/physio?sslmode=disable
 RELEASE_DIR := release/physio-bundle
 RELEASE_DIR_WIN := release/physio-bundle-win
+RELEASE_DIR_WIN_X64 := release/physio-bundle-win-x64
+RELEASE_DIR_WIN_ARM64 := release/physio-bundle-win-arm64
 PROTO_DIR := $(BACKEND_DIR)/protos
 PROTO_OUT := $(BACKEND_DIR)/golang
 PROTO_OUT_PKG := $(PROTO_OUT)/github.com/OPetricevic/physio-tracker/backend/golang/patients
@@ -61,29 +63,28 @@ dev:
 # Alias: generate protos (Go + gorm)
 proto: backend-proto
 
-# Package: build frontend + backend + bundle helper scripts into release/physio-bundle
+# Package: build frontend + Windows x64 bundle + zip for release
 package: clean-release frontend-build
 	@mkdir -p $(RELEASE_DIR)
-	# build backend binary into release dir
-	cd $(BACKEND_DIR) && DATABASE_URL=$(DB_URL) PORT=3600 go build -o ../$(RELEASE_DIR)/server ./cmd/server
+	# build Windows x64 backend binary into release dir
+	cd $(BACKEND_DIR) && GOOS=windows GOARCH=amd64 DATABASE_URL=$(DB_URL) PORT=3600 go build -o ../$(RELEASE_DIR)/server.exe ./cmd/server
 	# copy frontend build
 	mkdir -p $(RELEASE_DIR)/frontend
 	cp -r frontend/dist $(RELEASE_DIR)/frontend/
-	# copy assets (fonts), uploads placeholder, scripts
+	# copy assets (fonts), uploads placeholder, scripts, migrations
 	mkdir -p $(RELEASE_DIR)/assets/fonts
 	cp -r backend/assets/fonts/* $(RELEASE_DIR)/assets/fonts/
 	mkdir -p $(RELEASE_DIR)/uploads
 	mkdir -p $(RELEASE_DIR)/migrations
 	cp backend/migrations/*.sql $(RELEASE_DIR)/migrations/
-	cp scripts/start_linux.sh $(RELEASE_DIR)/
 	cp scripts/start_windows.ps1 $(RELEASE_DIR)/
 	mkdir -p $(RELEASE_DIR)/scripts/win
 	cp scripts/win/*.ps1 $(RELEASE_DIR)/scripts/win/ 2>/dev/null || true
 	cp scripts/win/*.iss $(RELEASE_DIR)/scripts/win/ 2>/dev/null || true
-	@echo "Bundle created at $(RELEASE_DIR)"
+	@echo "Windows bundle created at $(RELEASE_DIR)"
 	# zip the bundle for release upload
-	cd release && zip -r physio-bundle.zip physio-bundle
-	@echo "Zipped bundle at release/physio-bundle.zip"
+	cd release && zip -r physio-windows-x64.zip physio-bundle
+	@echo "Zipped bundle at release/physio-windows-x64.zip"
 
 clean-release:
 	rm -rf release
@@ -108,3 +109,37 @@ package-win: clean-release frontend-build
 	# zip the bundle
 	cd release && zip -r physio-windows-portable.zip physio-bundle-win
 	@echo "Windows portable bundle: release/physio-windows-portable.zip"
+
+# Build Windows bundle for x64 installer (server.exe only, no zip)
+package-win-x64: clean-release frontend-build
+	@mkdir -p $(RELEASE_DIR_WIN_X64)
+	cd $(BACKEND_DIR) && GOOS=windows GOARCH=amd64 DATABASE_URL=$(DB_URL) PORT=3600 go build -o ../$(RELEASE_DIR_WIN_X64)/server.exe ./cmd/server
+	mkdir -p $(RELEASE_DIR_WIN_X64)/frontend
+	cp -r frontend/dist $(RELEASE_DIR_WIN_X64)/frontend/
+	mkdir -p $(RELEASE_DIR_WIN_X64)/assets/fonts
+	cp -r backend/assets/fonts/* $(RELEASE_DIR_WIN_X64)/assets/fonts/
+	mkdir -p $(RELEASE_DIR_WIN_X64)/uploads
+	mkdir -p $(RELEASE_DIR_WIN_X64)/migrations
+	cp backend/migrations/*.sql $(RELEASE_DIR_WIN_X64)/migrations/
+	cp scripts/start_windows.ps1 $(RELEASE_DIR_WIN_X64)/
+	mkdir -p $(RELEASE_DIR_WIN_X64)/scripts/win
+	cp scripts/win/*.ps1 $(RELEASE_DIR_WIN_X64)/scripts/win/ 2>/dev/null || true
+	cp scripts/win/*.iss $(RELEASE_DIR_WIN_X64)/scripts/win/ 2>/dev/null || true
+	@echo "Windows x64 bundle: $(RELEASE_DIR_WIN_X64)"
+
+# Build Windows bundle for ARM64 installer (server.exe only, no zip)
+package-win-arm64: clean-release frontend-build
+	@mkdir -p $(RELEASE_DIR_WIN_ARM64)
+	cd $(BACKEND_DIR) && GOOS=windows GOARCH=arm64 DATABASE_URL=$(DB_URL) PORT=3600 go build -o ../$(RELEASE_DIR_WIN_ARM64)/server.exe ./cmd/server
+	mkdir -p $(RELEASE_DIR_WIN_ARM64)/frontend
+	cp -r frontend/dist $(RELEASE_DIR_WIN_ARM64)/frontend/
+	mkdir -p $(RELEASE_DIR_WIN_ARM64)/assets/fonts
+	cp -r backend/assets/fonts/* $(RELEASE_DIR_WIN_ARM64)/assets/fonts/
+	mkdir -p $(RELEASE_DIR_WIN_ARM64)/uploads
+	mkdir -p $(RELEASE_DIR_WIN_ARM64)/migrations
+	cp backend/migrations/*.sql $(RELEASE_DIR_WIN_ARM64)/migrations/
+	cp scripts/start_windows.ps1 $(RELEASE_DIR_WIN_ARM64)/
+	mkdir -p $(RELEASE_DIR_WIN_ARM64)/scripts/win
+	cp scripts/win/*.ps1 $(RELEASE_DIR_WIN_ARM64)/scripts/win/ 2>/dev/null || true
+	cp scripts/win/*.iss $(RELEASE_DIR_WIN_ARM64)/scripts/win/ 2>/dev/null || true
+	@echo "Windows ARM64 bundle: $(RELEASE_DIR_WIN_ARM64)"
