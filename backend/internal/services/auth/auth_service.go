@@ -30,6 +30,7 @@ type Service interface {
 	Register(ctx context.Context, req *RegisterRequest) (*pb.AuthToken, error)
 	Login(ctx context.Context, usernameOrEmail, password string) (*pb.AuthToken, error)
 	Logout(ctx context.Context, token string) error
+	ChangePassword(ctx context.Context, doctorUUID, currentPassword, newPassword string) error
 }
 
 type service struct {
@@ -134,6 +135,32 @@ func (s *service) Logout(ctx context.Context, token string) error {
 	}
 	if err := s.tokenRepo.Delete(ctx, token); err != nil {
 		return fmt.Errorf("logout: %w", err)
+	}
+	return nil
+}
+
+func (s *service) ChangePassword(ctx context.Context, doctorUUID, currentPassword, newPassword string) error {
+	if strings.TrimSpace(doctorUUID) == "" || strings.TrimSpace(currentPassword) == "" || strings.TrimSpace(newPassword) == "" {
+		return fmt.Errorf("change password: %w", ErrInvalidRequest)
+	}
+	cred, err := s.credRepo.GetByDoctor(ctx, doctorUUID)
+	if err != nil {
+		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("change password: %w", ErrNotFound)
+		}
+		return fmt.Errorf("change password: %w", err)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(cred.GetPasswordHash()), []byte(currentPassword)); err != nil {
+		return fmt.Errorf("change password: %w", ErrUnauthorized)
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("change password: %w", err)
+	}
+	cred.PasswordHash = string(hash)
+	cred.PasswordUpdatedAt = timestamppb.New(time.Now().UTC())
+	if _, err := s.credRepo.Update(ctx, cred); err != nil {
+		return fmt.Errorf("change password: %w", err)
 	}
 	return nil
 }

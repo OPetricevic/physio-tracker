@@ -18,6 +18,7 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, req *pb.CreateDoctorRequest) (*pb.Doctor, error)
+	Get(ctx context.Context, uuid string) (*pb.Doctor, error)
 	Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.Doctor, error)
 	Delete(ctx context.Context, uuid string) error
 	List(ctx context.Context, query string, pageSize, currentPage int) ([]*pb.Doctor, error)
@@ -56,6 +57,20 @@ func (s *service) Create(ctx context.Context, req *pb.CreateDoctorRequest) (*pb.
 		return nil, fmt.Errorf("create doctor: %w", err)
 	}
 	return created, nil
+}
+
+func (s *service) Get(ctx context.Context, uuid string) (*pb.Doctor, error) {
+	if strings.TrimSpace(uuid) == "" {
+		return nil, fmt.Errorf("get doctor: %w", se.ErrInvalidRequest)
+	}
+	doc, err := s.repo.Get(ctx, uuid)
+	if err != nil {
+		if errors.Is(err, re.ErrNotFound) || errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("get doctor: %w", se.ErrNotFound)
+		}
+		return nil, fmt.Errorf("get doctor: %w", err)
+	}
+	return doc, nil
 }
 
 func (s *service) Update(ctx context.Context, req *pb.UpdateDoctorRequest) (*pb.Doctor, error) {

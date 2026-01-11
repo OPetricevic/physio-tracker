@@ -11,9 +11,10 @@ type Props = {
   hasNext: boolean
   onPageChange: (page: number) => void
   disabled: boolean
-  onAdd: (input: { note: string; diagnosis: string; therapy: string; otherInfo: string }) => void
+  onAdd: (input: { note: string; status: string; diagnosis: string; therapy: string; otherInfo: string }) => void
   onDelete: (uuid: string) => void
   onUpdateIncludes: (uuid: string, includeVisitUuids: string[]) => Promise<void>
+  onEdit: (uuid: string, payload: { note: string; status: string; diagnosis: string; therapy: string; otherInfo: string }) => Promise<void>
   onGeneratePdf: (anamnesisUuid: string, includes?: string[], onlyCurrent?: boolean) => void
   onBackup: () => void
 }
@@ -30,11 +31,13 @@ export function AnamnesisPanel({
   onAdd,
   onDelete,
   onUpdateIncludes,
+  onEdit,
   onGeneratePdf,
   onBackup,
   loadSelectionOptions,
 }: Props) {
   const [note, setNote] = useState('')
+  const [status, setStatus] = useState('')
   const [diagnosis, setDiagnosis] = useState('')
   const [therapy, setTherapy] = useState('')
   const [otherInfo, setOtherInfo] = useState('')
@@ -47,17 +50,36 @@ export function AnamnesisPanel({
   const [selectionSearch, setSelectionSearch] = useState('')
   const [selectionList, setSelectionList] = useState<Anamnesis[]>([])
   const [onlyCurrent, setOnlyCurrent] = useState(false)
+  const [editModal, setEditModal] = useState<{
+    open: boolean
+    currentId: string | null
+    note: string
+    status: string
+    diagnosis: string
+    therapy: string
+    otherInfo: string
+  }>({
+    open: false,
+    currentId: null,
+    note: '',
+    status: '',
+    diagnosis: '',
+    therapy: '',
+    otherInfo: '',
+  })
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!note.trim() || !diagnosis.trim() || !therapy.trim() || disabled) return
+    if (disabled) return
     onAdd({
       note: note.trim(),
+      status: status.trim(),
       diagnosis: diagnosis.trim(),
       therapy: therapy.trim(),
       otherInfo: otherInfo.trim(),
     })
     setNote('')
+    setStatus('')
     setDiagnosis('')
     setTherapy('')
     setOtherInfo('')
@@ -119,9 +141,28 @@ export function AnamnesisPanel({
                     })()
                   }}
                   disabled={disabled}
-                >
-                  Generiraj PDF
-                </button>
+                  >
+                    Generiraj PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="btn text"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditModal({
+                        open: true,
+                        currentId: entry.uuid,
+                        note: entry.note,
+                        status: entry.status,
+                        diagnosis: entry.diagnosis,
+                        therapy: entry.therapy,
+                        otherInfo: entry.otherInfo,
+                      })
+                    }}
+                    disabled={disabled}
+                  >
+                    Uredi
+                  </button>
                   <button
                     type="button"
                     className="btn text danger"
@@ -177,6 +218,17 @@ export function AnamnesisPanel({
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
+                disabled={disabled}
+              />
+
+              <label htmlFor="status">Status</label>
+              <textarea
+                id="status"
+                name="status"
+                placeholder="Status..."
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                rows={2}
                 disabled={disabled}
               />
 
@@ -341,6 +393,110 @@ export function AnamnesisPanel({
                 Spremi i generiraj
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {editModal.open && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p className="eyebrow">Uređivanje</p>
+            <h3>Uredi posjet</h3>
+            <form
+              className="composer"
+              onSubmit={(event) => {
+                event.preventDefault()
+                if (!editModal.currentId) return
+                onEdit(editModal.currentId, {
+                  note: editModal.note.trim(),
+                  status: editModal.status.trim(),
+                  diagnosis: editModal.diagnosis.trim(),
+                  therapy: editModal.therapy.trim(),
+                  otherInfo: editModal.otherInfo.trim(),
+                })
+                setEditModal({
+                  open: false,
+                  currentId: null,
+                  note: '',
+                  status: '',
+                  diagnosis: '',
+                  therapy: '',
+                  otherInfo: '',
+                })
+              }}
+            >
+              <label htmlFor="edit-note">Anamneza</label>
+              <textarea
+                id="edit-note"
+                name="edit-note"
+                value={editModal.note}
+                onChange={(e) => setEditModal((prev) => ({ ...prev, note: e.target.value }))}
+                rows={3}
+                disabled={disabled}
+              />
+
+              <label htmlFor="edit-status">Status</label>
+              <textarea
+                id="edit-status"
+                name="edit-status"
+                value={editModal.status}
+                onChange={(e) => setEditModal((prev) => ({ ...prev, status: e.target.value }))}
+                rows={2}
+                disabled={disabled}
+              />
+
+              <label htmlFor="edit-diagnosis">Dijagnoza</label>
+              <textarea
+                id="edit-diagnosis"
+                name="edit-diagnosis"
+                value={editModal.diagnosis}
+                onChange={(e) => setEditModal((prev) => ({ ...prev, diagnosis: e.target.value }))}
+                rows={2}
+                disabled={disabled}
+              />
+
+              <label htmlFor="edit-therapy">Terapija</label>
+              <textarea
+                id="edit-therapy"
+                name="edit-therapy"
+                value={editModal.therapy}
+                onChange={(e) => setEditModal((prev) => ({ ...prev, therapy: e.target.value }))}
+                rows={2}
+                disabled={disabled}
+              />
+
+              <label htmlFor="edit-other">Ostale informacije</label>
+              <textarea
+                id="edit-other"
+                name="edit-other"
+                value={editModal.otherInfo}
+                onChange={(e) => setEditModal((prev) => ({ ...prev, otherInfo: e.target.value }))}
+                rows={2}
+                disabled={disabled}
+              />
+              <div className="actions">
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() =>
+                    setEditModal({
+                      open: false,
+                      currentId: null,
+                      note: '',
+                      status: '',
+                      diagnosis: '',
+                      therapy: '',
+                      otherInfo: '',
+                    })
+                  }
+                >
+                  Odustani
+                </button>
+                <button type="submit" className="btn primary" disabled={disabled}>
+                  Spremi promjene
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

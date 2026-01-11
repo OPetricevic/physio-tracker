@@ -14,6 +14,7 @@ export interface Anamnesis {
   uuid: string
   patientUuid: string
   note: string // Anamneza
+  status: string
   diagnosis: string
   therapy: string
   otherInfo: string

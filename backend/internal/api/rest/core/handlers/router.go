@@ -49,6 +49,7 @@ func BuildRouter(db *gorm.DB) *mux.Router {
 	// Protected routes: everything else goes under a subrouter with auth middleware.
 	protected := api.PathPrefix("/").Subrouter()
 	protected.Use(mwauth.AuthMiddleware(tokenRepo))
+	protected.HandleFunc("/auth/change-password", authController.ChangePassword).Methods(http.MethodPost)
 
 	for _, build := range moduleBuilders {
 		build(db).Register(protected)

@@ -16,33 +16,36 @@ message Anamnesis {
 
   string uuid = 1;
   string patient_uuid = 2;
-  string anamnesis = 3 [(validate.rules).string = {min_bytes: 1}]; // session notes
-  string diagnosis = 4 [(validate.rules).string = {min_bytes: 1}];
-  string therapy = 5 [(validate.rules).string = {min_bytes: 1}];
+  string anamnesis = 3; // session notes
+  string diagnosis = 4;
+  string therapy = 5;
   string other_info = 6; // optional
   // Stored list of previously linked visits for PDF regeneration.
   repeated string include_visit_uuids = 7;
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp updated_at = 9;
+  string status = 10;
 }
 
 message CreateAnamnesisRequest {
   string patient_uuid = 1 [(validate.rules).string = {uuid: true, min_bytes: 1}];
-  string anamnesis = 2 [(validate.rules).string = {min_bytes: 1}];
-  string diagnosis = 3 [(validate.rules).string = {min_bytes: 1}];
-  string therapy = 4 [(validate.rules).string = {min_bytes: 1}];
+  string anamnesis = 2;
+  string diagnosis = 3;
+  string therapy = 4;
   string other_info = 5;
   repeated string include_visit_uuids = 6;
+  string status = 7;
 }
 
 message UpdateAnamnesisRequest {
   string uuid = 1 [(validate.rules).string = {uuid: true, min_bytes: 1}];
   string patient_uuid = 2 [(validate.rules).string = {uuid: true, min_bytes: 1}];
-  string anamnesis = 3; // optional for PATCH
-  string diagnosis = 4; // optional for PATCH
-  string therapy = 5;   // optional for PATCH
-  string other_info = 6; // optional for PATCH
+  google.protobuf.StringValue anamnesis = 3; // optional for PATCH
+  google.protobuf.StringValue diagnosis = 4; // optional for PATCH
+  google.protobuf.StringValue therapy = 5;   // optional for PATCH
+  google.protobuf.StringValue other_info = 6; // optional for PATCH
   repeated string include_visit_uuids = 7;
+  google.protobuf.StringValue status = 8; // optional for PATCH
 }
 
 message AnamnesisResponse {

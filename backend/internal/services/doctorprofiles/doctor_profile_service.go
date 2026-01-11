@@ -80,9 +80,6 @@ func (s *service) Upsert(ctx context.Context, doctorUUID string, req *pt.UpsertD
 	p.Email = trim(p.GetEmail())
 	p.Website = trim(p.GetWebsite())
 	p.LogoPath = trim(p.GetLogoPath())
-	p.ProtocolPrefix = trim(p.GetProtocolPrefix())
-	p.HeaderNote = trim(p.GetHeaderNote())
-	p.FooterNote = trim(p.GetFooterNote())
 	p.UpdatedAt = now
 
 	var existing *pt.DoctorProfile
@@ -90,13 +87,9 @@ func (s *service) Upsert(ctx context.Context, doctorUUID string, req *pt.UpsertD
 		existing = ex
 	}
 
-	// Preserve existing logo if caller sends empty; delete old file if replaced.
-	if existing != nil {
-		if p.GetLogoPath() == "" {
-			p.LogoPath = existing.GetLogoPath()
-		} else if existing.GetLogoPath() != "" && existing.GetLogoPath() != p.GetLogoPath() {
-			_ = deleteLocalStatic(existing.GetLogoPath())
-		}
+	// If logo changes or gets cleared, clean up the old file.
+	if existing != nil && existing.GetLogoPath() != "" && existing.GetLogoPath() != p.GetLogoPath() {
+		_ = deleteLocalStatic(existing.GetLogoPath())
 	}
 
 	saved, err := s.repo.Upsert(ctx, p)

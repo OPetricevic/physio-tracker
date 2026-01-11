@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom'
-import type { ReactElement } from 'react'
+import { useState, type ReactElement } from 'react'
 import { AuthProvider, useAuth } from './auth'
 import { PatientsProvider } from './data/PatientsContext'
 import { LoginPage } from './pages/Login'
@@ -9,6 +9,7 @@ import { SchedulePage } from './pages/Schedule'
 import { ManagePatientsPage } from './pages/ManagePatients'
 import { ProfilePage } from './pages/Profile'
 import { BackupPage } from './pages/Backup'
+import { AccountPage } from './pages/Account'
 
 function Protected({ children }: { children: ReactElement }) {
   const { user } = useAuth()
@@ -18,6 +19,11 @@ function Protected({ children }: { children: ReactElement }) {
 
 function AppShell() {
   const { logout, user } = useAuth()
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const handleSettingsBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (event.relatedTarget && event.currentTarget.contains(event.relatedTarget)) return
+    setSettingsOpen(false)
+  }
 
   return (
     <div className="app-shell">
@@ -39,15 +45,42 @@ function AppShell() {
           <NavLink to="/app/raspored" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
             Raspored
           </NavLink>
-          <NavLink to="/app/profil" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
-            Profil
-          </NavLink>
-          <NavLink to="/app/sigurnosna-kopija" className={({ isActive }) => `nav-link ${isActive ? 'is-active' : ''}`}>
-            Sigurnosna kopija
-          </NavLink>
         </nav>
         <div className="nav-actions">
           {user && <span className="pill muted">Prijavljeni: {user.email}</span>}
+          <div className="nav-dropdown" tabIndex={0} onBlur={handleSettingsBlur}>
+            <button
+              className="btn ghost small"
+              onClick={() => setSettingsOpen((prev) => !prev)}
+            >
+              Postavke
+            </button>
+            {settingsOpen && (
+              <div className="nav-menu">
+                <NavLink
+                  to="/app/profil"
+                  className="nav-menu-item"
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  Profil ordinacije
+                </NavLink>
+                <NavLink
+                  to="/app/racun"
+                  className="nav-menu-item"
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  Račun
+                </NavLink>
+                <NavLink
+                  to="/app/sigurnosna-kopija"
+                  className="nav-menu-item"
+                  onClick={() => setSettingsOpen(false)}
+                >
+                  Sigurnosna kopija
+                </NavLink>
+              </div>
+            )}
+          </div>
           <button className="btn ghost small" onClick={logout}>
             Odjava
           </button>
@@ -80,6 +113,7 @@ function App() {
               <Route path="upravljanje" element={<ManagePatientsPage />} />
               <Route path="raspored" element={<SchedulePage />} />
               <Route path="profil" element={<ProfilePage />} />
+              <Route path="racun" element={<AccountPage />} />
               <Route path="sigurnosna-kopija" element={<BackupPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

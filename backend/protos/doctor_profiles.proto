@@ -24,13 +24,11 @@ message DoctorProfile {
   string email = 8;
   string website = 9;
   string logo_path = 10;
-  string signature_path = 11;
-  string protocol_prefix = 12;
-  string header_note = 13;
-  string footer_note = 14;
-
   google.protobuf.Timestamp created_at = 15;
   google.protobuf.Timestamp updated_at = 16;
+  string oib_owner = 17;
+
+  reserved 11, 12, 13, 14;
 }
 
 message UpsertDoctorProfileRequest {

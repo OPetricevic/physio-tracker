@@ -33,7 +33,14 @@ type PatientsContextValue = {
   ) => Promise<{ items: Anamnesis[]; hasNext: boolean }>
   createAnamnesis: (
     patientUuid: string,
-    input: { note: string; diagnosis: string; therapy: string; otherInfo: string; includeVisitUuids?: string[] },
+    input: {
+      note: string
+      status: string
+      diagnosis: string
+      therapy: string
+      otherInfo: string
+      includeVisitUuids?: string[]
+    },
   ) => Promise<Anamnesis | null>
   deleteAnamnesis: (patientUuid: string, uuid: string) => Promise<void>
   updateAnamnesis: (
@@ -65,6 +72,7 @@ function dtoToAnamnesis(dto: AnamnesisDto): Anamnesis {
     uuid: dto.uuid,
     patientUuid: dto.patient_uuid,
     note: dto.anamnesis,
+    status: dto.status,
     diagnosis: dto.diagnosis,
     therapy: dto.therapy,
     otherInfo: dto.other_info,
@@ -217,7 +225,14 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
 
   const createAnamnesis = async (
     patientUuid: string,
-    input: { note: string; diagnosis: string; therapy: string; otherInfo: string; includeVisitUuids?: string[] },
+    input: {
+      note: string
+      status: string
+      diagnosis: string
+      therapy: string
+      otherInfo: string
+      includeVisitUuids?: string[]
+    },
   ) => {
     if (!user?.token) return null
     try {
@@ -226,6 +241,7 @@ export function PatientsProvider({ children }: { children: ReactNode }) {
         token: user.token,
         body: {
           anamnesis: input.note,
+          status: input.status,
           diagnosis: input.diagnosis,
           therapy: input.therapy,
           other_info: input.otherInfo,

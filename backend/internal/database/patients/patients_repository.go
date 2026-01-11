@@ -60,9 +60,11 @@ func (r *PatientsRepository) List(ctx context.Context, filter *pt.ListPatientsRe
 	if strings.TrimSpace(doctorUUID) != "" {
 		q = q.Where("doctor_uuid = ?", doctorUUID)
 	}
-	if strings.TrimSpace(filter.GetQuery()) != "" {
-		like := "%" + strings.ToLower(strings.TrimSpace(filter.GetQuery())) + "%"
-		q = q.Where("LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(phone) LIKE ?", like, like, like)
+	if terms := parseSearchTerms(filter.GetQuery()); len(terms) > 0 {
+		for _, term := range terms {
+			like := "%" + term + "%"
+			q = q.Where("LOWER(first_name) LIKE ? OR LOWER(last_name) LIKE ? OR LOWER(phone) LIKE ?", like, like, like)
+		}
 	}
 	if limit > 0 {
 		q = q.Limit(limit).Offset(offset)
@@ -109,6 +111,14 @@ func patientORMsToProto(ctx context.Context, orms []pt.PatientORM) ([]*pt.Patien
 		res = append(res, &pbObj)
 	}
 	return res, nil
+}
+
+func parseSearchTerms(query string) []string {
+	cleaned := strings.ToLower(strings.TrimSpace(query))
+	if cleaned == "" {
+		return nil
+	}
+	return strings.Fields(cleaned)
 }
 
 var _ out.Repository = (*PatientsRepository)(nil)

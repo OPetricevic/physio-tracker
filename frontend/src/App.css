@@ -365,6 +365,43 @@ textarea:focus {
   gap: 8px;
 }
 
+.nav-dropdown {
+  position: relative;
+  outline: none;
+}
+
+.nav-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 190px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  padding: 8px;
+  z-index: 20;
+}
+
+.nav-menu-item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nav-menu-item:hover {
+  background: var(--fill);
+}
+
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
 /* Manage patients table */
 .table {
   display: flex;

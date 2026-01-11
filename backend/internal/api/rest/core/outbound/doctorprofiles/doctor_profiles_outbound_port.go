@@ -1,4 +1,4 @@
-package doctorprofiles
+package doctorprofilesoutboundport
 
 import (
 	"context"

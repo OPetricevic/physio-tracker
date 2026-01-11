@@ -48,7 +48,23 @@ func (r *Repository) Upsert(ctx context.Context, profile *pt.DoctorProfile) (*pt
 			return err
 		}
 		orm.Uuid = existing.Uuid
-		return tx.Model(&existing).Where("doctor_uuid = ?", profile.GetDoctorUuid()).Updates(&orm).Error
+		// Preserve created_at while allowing empty strings to overwrite optional fields.
+		orm.CreatedAt = existing.CreatedAt
+		return tx.Model(&existing).
+			Select(
+				"practice_name",
+				"department",
+				"role_title",
+				"address",
+				"phone",
+				"email",
+				"website",
+				"logo_path",
+				"oib_owner",
+				"updated_at",
+			).
+			Where("doctor_uuid = ?", profile.GetDoctorUuid()).
+			Updates(&orm).Error
 	})
 	if err != nil {
 		return nil, fmt.Errorf("upsert doctor profile: %w", err)

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/OPetricevic/physio-tracker/backend/internal/services/auth"
+	mwauth "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/middleware"
 	"github.com/jackc/pgconn"
 )
 
@@ -28,6 +29,11 @@ type registerRequest struct {
 type loginRequest struct {
 	Identifier string `json:"identifier"` // email or username
 	Password   string `json:"password"`
+}
+
+type changePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
 }
 
 func (c *AuthController) Register(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +90,24 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := c.svc.Logout(r.Context(), payload.Token); err != nil {
 		writeAuthError(w, "logout", err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (c *AuthController) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var req changePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+	if err := c.svc.ChangePassword(r.Context(), doctorUUID, req.CurrentPassword, req.NewPassword); err != nil {
+		writeAuthError(w, "change password", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

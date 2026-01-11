@@ -57,7 +57,7 @@ export function BackupPage() {
         const text = await res.text()
         throw new Error(text || 'Neuspješno vraćanje sigurnosne kopije.')
       }
-      await apiRequest('/api/health', { method: 'GET', token })
+      await fetch('/api/health', { method: 'GET' })
       setMessage('Sigurnosna kopija je vraćena.')
     } catch (err) {
       setError('Vraćanje sigurnosne kopije nije uspjelo.')

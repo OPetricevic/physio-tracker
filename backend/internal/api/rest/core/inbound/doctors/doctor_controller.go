@@ -7,6 +7,7 @@ import (
 
 	pb "github.com/OPetricevic/physio-tracker/backend/golang/patients"
 	common "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/common"
+	mwauth "github.com/OPetricevic/physio-tracker/backend/internal/api/rest/core/middleware"
 	se "github.com/OPetricevic/physio-tracker/backend/internal/commonerrors/serviceerrors"
 	svc "github.com/OPetricevic/physio-tracker/backend/internal/services/doctors"
 	"github.com/gorilla/mux"
@@ -56,6 +57,57 @@ func (c *DoctorController) UpdateDoctor(w http.ResponseWriter, r *http.Request) 
 	if doctorUUID != "" {
 		req.Uuid = doctorUUID
 	}
+	doc, err := c.svc.Update(r.Context(), &req)
+	if err != nil {
+		switch {
+		case errors.Is(err, se.ErrInvalidRequest):
+			common.WriteJSONError(w, "invalid_request", "update doctor: invalid request", http.StatusBadRequest)
+		case errors.Is(err, se.ErrNotFound):
+			common.WriteJSONError(w, "not_found", "update doctor: not found", http.StatusNotFound)
+		case errors.Is(err, se.ErrConflict):
+			common.WriteJSONError(w, "conflict", "update doctor: conflict", http.StatusConflict)
+		default:
+			common.WriteJSONError(w, "internal_error", "update doctor: internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	common.WriteProto(w, doc, http.StatusOK)
+}
+
+func (c *DoctorController) GetMe(w http.ResponseWriter, r *http.Request) {
+	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	doc, err := c.svc.Get(r.Context(), doctorUUID)
+	if err != nil {
+		switch {
+		case errors.Is(err, se.ErrInvalidRequest):
+			common.WriteJSONError(w, "invalid_request", "get doctor: invalid request", http.StatusBadRequest)
+		case errors.Is(err, se.ErrNotFound):
+			common.WriteJSONError(w, "not_found", "get doctor: not found", http.StatusNotFound)
+		default:
+			common.WriteJSONError(w, "internal_error", "get doctor: internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	common.WriteProto(w, doc, http.StatusOK)
+}
+
+func (c *DoctorController) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	doctorUUID, ok := mwauth.GetDoctorUUID(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var req pb.UpdateDoctorRequest
+	body, _ := io.ReadAll(r.Body)
+	if err := jsonpb.Unmarshal(body, &req); err != nil {
+		common.WriteJSONError(w, "invalid_request", "update doctor: invalid JSON", http.StatusBadRequest)
+		return
+	}
+	req.Uuid = doctorUUID
 	doc, err := c.svc.Update(r.Context(), &req)
 	if err != nil {
 		switch {

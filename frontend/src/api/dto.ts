@@ -20,6 +20,7 @@ export type AnamnesisDto = {
   uuid: string
   patient_uuid: string
   anamnesis: string
+  status: string
   diagnosis: string
   therapy: string
   other_info: string
@@ -34,6 +35,11 @@ export type ListAnamnesesResponse = {
 
 export type UpdateAnamnesisPayload = {
   include_visit_uuids?: string[]
+  anamnesis?: string
+  status?: string
+  diagnosis?: string
+  therapy?: string
+  other_info?: string
 }
 
 export type AuthLoginResponse = {

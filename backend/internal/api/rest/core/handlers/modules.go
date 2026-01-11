@@ -82,7 +82,8 @@ func NewAnamnesisModule(db *gorm.DB) Module {
 	repo := dbanamneses.NewRepository(db)
 	pRepo := dbpatients.NewPatientsRepository(db)
 	profRepo := dbdoctorprofiles.NewRepository(db)
-	svc := svcanamneses.NewService(repo, pRepo, profRepo)
+	dRepo := dbdoctors.NewDoctorsRepository(db)
+	svc := svcanamneses.NewService(repo, pRepo, profRepo, dRepo)
 	ctrl := canamneses.NewController(svc)
 	return &anamnesisModule{handler: anamneses.NewHandler(ctrl)}
 }

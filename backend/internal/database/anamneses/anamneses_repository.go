@@ -43,6 +43,7 @@ func (r *Repository) Update(ctx context.Context, a *pb.Anamnesis) (*pb.Anamnesis
 		Updates(map[string]interface{}{
 			"patient_uuid":        rec.PatientUuid,
 			"anamnesis":           rec.Anamnesis,
+			"status":              rec.Status,
 			"diagnosis":           rec.Diagnosis,
 			"therapy":             rec.Therapy,
 			"other_info":          rec.OtherInfo,

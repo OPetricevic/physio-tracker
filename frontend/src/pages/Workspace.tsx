@@ -84,11 +84,12 @@ export function WorkspacePage() {
     }
   }
 
-  const handleAddAnamnesis = (input: { note: string; diagnosis?: string; therapy?: string; otherInfo?: string }) => {
+  const handleAddAnamnesis = (input: { note: string; status?: string; diagnosis?: string; therapy?: string; otherInfo?: string }) => {
     if (!selectedPatient) return
     void (async () => {
       await createAnamnesis(selectedPatient.uuid, {
         note: input.note,
+        status: input.status || '',
         diagnosis: input.diagnosis || '',
         therapy: input.therapy || '',
         otherInfo: input.otherInfo || '',
@@ -178,6 +179,19 @@ export function WorkspacePage() {
                 if (!selectedPatient) return
                 void (async () => {
                   await deleteAnamnesis(selectedPatient.uuid, uuid)
+                  await loadAnamneses(selectedPatient.uuid, anaQuery, 1)
+                })()
+              }}
+              onEdit={(uuid, payload) => {
+                if (!selectedPatient) return
+                void (async () => {
+                  await updateAnamnesis(selectedPatient.uuid, uuid, {
+                    anamnesis: payload.note,
+                    status: payload.status,
+                    diagnosis: payload.diagnosis,
+                    therapy: payload.therapy,
+                    other_info: payload.otherInfo,
+                  })
                   await loadAnamneses(selectedPatient.uuid, anaQuery, 1)
                 })()
               }}

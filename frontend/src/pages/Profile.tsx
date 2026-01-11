@@ -13,9 +13,7 @@ type DoctorProfile = {
   email?: string
   website?: string
   logo_path?: string
-  protocol_prefix?: string
-  header_note?: string
-  footer_note?: string
+  oib_owner?: string
 }
 
 type ProfileResponse = {
@@ -51,14 +49,12 @@ export function ProfilePage() {
           practice_name: res.profile.practice_name ?? '',
           department: res.profile.department ?? '',
           role_title: res.profile.role_title ?? '',
+          oib_owner: res.profile.oib_owner ?? '',
           address: res.profile.address ?? '',
           phone: res.profile.phone ?? '',
           email: res.profile.email ?? '',
           website: res.profile.website ?? '',
           logo_path: res.profile.logo_path ?? '',
-          protocol_prefix: res.profile.protocol_prefix ?? '',
-          header_note: res.profile.header_note ?? '',
-          footer_note: res.profile.footer_note ?? '',
           uuid: res.profile.uuid,
           doctor_uuid: res.profile.doctor_uuid,
         })
@@ -82,7 +78,11 @@ export function ProfilePage() {
   }
 
   const handleSave = async () => {
-    if (!isValid || !token) return
+    if (!token) return
+    if (!isValid) {
+      setError('Molimo ispunite obavezna polja.')
+      return
+    }
     setSaving(true)
     setError(null)
     setSaved(false)
@@ -146,7 +146,7 @@ export function ProfilePage() {
           <h1>Profil ordinacije</h1>
           <p className="muted">Podaci za zaglavlje PDF nalaza: naziv, kontakt, adresa i logo.</p>
         </div>
-        <button className="btn primary" onClick={handleSave} disabled={!isValid || saving || loading || !dirty}>
+        <button className="btn primary" onClick={handleSave} disabled={saving || loading || !dirty}>
           {saving ? 'Spremanje...' : 'Spremi'}
         </button>
       </div>
@@ -185,11 +185,11 @@ export function ProfilePage() {
                 onFocus={() => setTouched((p) => ({ ...p, role_title: true }))}
               />
               <Field
-                label="Protokol prefiks"
-                value={profile.protocol_prefix ?? ''}
-                onChange={handleChange('protocol_prefix')}
-                ghost={!touched.protocol_prefix && !!profile.protocol_prefix}
-                onFocus={() => setTouched((p) => ({ ...p, protocol_prefix: true }))}
+                label="OIB vlasnika"
+                value={profile.oib_owner ?? ''}
+                onChange={handleChange('oib_owner')}
+                ghost={!touched.oib_owner && !!profile.oib_owner}
+                onFocus={() => setTouched((p) => ({ ...p, oib_owner: true }))}
               />
             </div>
           </div>
@@ -251,31 +251,6 @@ export function ProfilePage() {
               <div className="logo-actions">
                 <input type="file" accept=".png,.jpg,.jpeg" onChange={handleFileInput('logo_path')} />
               </div>
-            </div>
-          </div>
-
-          <div className="card section">
-            <div className="section-header">
-              <h2>Napomene</h2>
-              <p className="muted">Dodatni tekst u zaglavlju ili podnožju nalaza.</p>
-            </div>
-            <div className="grid one-col">
-              <Field
-                label="Napomena u zaglavlju"
-                textarea
-                value={profile.header_note ?? ''}
-                onChange={handleChange('header_note')}
-                ghost={!touched.header_note && !!profile.header_note}
-                onFocus={() => setTouched((p) => ({ ...p, header_note: true }))}
-              />
-              <Field
-                label="Napomena u podnožju"
-                textarea
-                value={profile.footer_note ?? ''}
-                onChange={handleChange('footer_note')}
-                ghost={!touched.footer_note && !!profile.footer_note}
-                onFocus={() => setTouched((p) => ({ ...p, footer_note: true }))}
-              />
             </div>
           </div>
 

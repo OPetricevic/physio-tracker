@@ -13,6 +13,7 @@ type anamnesisRecord struct {
 	Uuid              string         `gorm:"column:uuid;primaryKey"`
 	PatientUuid       string         `gorm:"column:patient_uuid"`
 	Anamnesis         string         `gorm:"column:anamnesis"`
+	Status            string         `gorm:"column:status"`
 	Diagnosis         string         `gorm:"column:diagnosis"`
 	Therapy           string         `gorm:"column:therapy"`
 	OtherInfo         string         `gorm:"column:other_info"`
@@ -32,6 +33,7 @@ func recordToPB(rec anamnesisRecord) *pb.Anamnesis {
 		Uuid:              rec.Uuid,
 		PatientUuid:       rec.PatientUuid,
 		Anamnesis:         rec.Anamnesis,
+		Status:            rec.Status,
 		Diagnosis:         rec.Diagnosis,
 		Therapy:           rec.Therapy,
 		OtherInfo:         rec.OtherInfo,
@@ -50,6 +52,7 @@ func pbToRecord(a *pb.Anamnesis) (anamnesisRecord, error) {
 		Uuid:              a.GetUuid(),
 		PatientUuid:       a.GetPatientUuid(),
 		Anamnesis:         a.GetAnamnesis(),
+		Status:            a.GetStatus(),
 		Diagnosis:         a.GetDiagnosis(),
 		Therapy:           a.GetTherapy(),
 		OtherInfo:         a.GetOtherInfo(),
